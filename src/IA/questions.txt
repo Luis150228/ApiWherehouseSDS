@@ -1,8 +1,5 @@
-esta forma es correcata para el .env
-
-
-DB=eut_warehouse
-USER=lrangel
-PASS=F3nixFree15
-HOST=180.176.105.244
-PORT=3306
+DB_NAME=eut_warehouse
+DB_USER=lrangel
+DB_PASS=F3nixFree15
+DB_HOST=180.176.105.244
+DB_PORT=3306
