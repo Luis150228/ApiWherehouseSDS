@@ -1,33 +1,11 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { Sequelize, DataTypes } from 'sequelize';
+// src/middleware/logger.js
 
-dotenv.config();
+const logger = (req, res, next) => {
+  console.log(`🟢 ${req.method} ${req.originalUrl}`);
+  console.log('Body:', req.body);
+  console.log('Params:', req.params);
+  console.log('Query:', req.query);
+  next(); // Sigue al siguiente middleware o controller
+};
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-// Conexión a MariaDB
-const sequelize = new Sequelize(process.env.DB, process.env.USER, process.env.PASS, {
-  host: process.env.HOST,
-  dialect: 'mariadb'
-});
-
-// Modelo ejemplo
-const Usuario = sequelize.define('Usuario', {
-  nombre: DataTypes.STRING,
-  email: DataTypes.STRING
-});
-
-// Endpoint de prueba
-app.get('/usuarios', async (req, res) => {
-  const usuarios = await Usuario.findAll();
-  res.json(usuarios);
-});
-
-// Inicializar
-app.listen(3000, () => {
-  console.log('API corriendo en puerto 3000');
-});
+export default logger;
