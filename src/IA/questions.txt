@@ -1,5 +1,17 @@
-DB_NAME=eut_warehouse
-DB_USER=lrangel
-DB_PASS=F3nixFree15
-DB_HOST=180.176.105.244
-DB_PORT=3306
+import sequelize from './src/config/db.js'; // Ajusta la ruta si es necesario
+
+async function testConnection() {
+  try {
+    await sequelize.authenticate();
+    console.log('✅ Conexión exitosa a MariaDB.');
+  } catch (error) {
+    console.error('❌ Error al conectar:', error);
+  } finally {
+    await sequelize.close();
+  }
+}
+
+testConnection();
+
+
+node testConnection.js
