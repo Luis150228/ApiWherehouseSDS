@@ -1,0 +1,8 @@
+esta forma es correcata para el .env
+
+
+DB=eut_warehouse
+USER=lrangel
+PASS=F3nixFree15
+HOST=180.176.105.244
+PORT=3306
