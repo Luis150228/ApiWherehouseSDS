@@ -8,6 +8,7 @@ import errorHandler from './src/middleware/errorHandler.js';
 
 // Importamos las rutas
 import userRoutes from './src/routes/user.routes.js';
+import logger from './src/middleware/logger.js';
 // import inventoryRoutes from './src/routes/inventory.routes.js';
 
 // Configuramos las variables de entorno
@@ -24,14 +25,15 @@ app.use(express.json());
 
 // Health check route
 app.get('/health', (req, res) => {
-  res.json({ status: 'API Running', version: '1.0.0' });
+  res.json({ status: 'API Inventario Running', version: '1.0.0' });
 });
 
 // Rutas de la API
 app.use('/api/users', userRoutes);
 // app.use('/api/inventory', inventoryRoutes);
 
-// Middleware de manejo de errores
+// Middlewares
+app.use(logger)
 app.use(errorHandler);
 
 // Conexión a la base de datos al iniciar el servidor

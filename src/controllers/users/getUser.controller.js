@@ -1,4 +1,4 @@
-import sequelize from '../config/db.js';
+import sequelize from '../../config/db.js';
 
 export const getUsers = async (req, res, next) => {
   try {
