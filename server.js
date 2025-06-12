@@ -8,7 +8,7 @@ import errorHandler from './src/middleware/errorHandler.js';
 
 // Importamos las rutas
 import userRoutes from './src/routes/user.routes.js';
-import inventoryRoutes from './src/routes/inventory.routes.js';
+// import inventoryRoutes from './src/routes/inventory.routes.js';
 
 // Configuramos las variables de entorno
 dotenv.config();
@@ -29,7 +29,7 @@ app.get('/health', (req, res) => {
 
 // Rutas de la API
 app.use('/api/users', userRoutes);
-app.use('/api/inventory', inventoryRoutes);
+// app.use('/api/inventory', inventoryRoutes);
 
 // Middleware de manejo de errores
 app.use(errorHandler);
@@ -38,7 +38,7 @@ app.use(errorHandler);
 const startServer = async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ Conectado exitosamente a la base de datos MariaDB.');
+    console.log('✅ Conectado exitosamente a la base de datos de Inventarios.');
 
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
