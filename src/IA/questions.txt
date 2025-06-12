@@ -1,17 +1,33 @@
-import sequelize from './src/config/db.js'; // Ajusta la ruta si es necesario
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { Sequelize, DataTypes } from 'sequelize';
 
-async function testConnection() {
-  try {
-    await sequelize.authenticate();
-    console.log('✅ Conexión exitosa a MariaDB.');
-  } catch (error) {
-    console.error('❌ Error al conectar:', error);
-  } finally {
-    await sequelize.close();
-  }
-}
+dotenv.config();
 
-testConnection();
+const app = express();
+app.use(cors());
+app.use(express.json());
 
+// Conexión a MariaDB
+const sequelize = new Sequelize(process.env.DB, process.env.USER, process.env.PASS, {
+  host: process.env.HOST,
+  dialect: 'mariadb'
+});
 
-node testConnection.js
+// Modelo ejemplo
+const Usuario = sequelize.define('Usuario', {
+  nombre: DataTypes.STRING,
+  email: DataTypes.STRING
+});
+
+// Endpoint de prueba
+app.get('/usuarios', async (req, res) => {
+  const usuarios = await Usuario.findAll();
+  res.json(usuarios);
+});
+
+// Inicializar
+app.listen(3000, () => {
+  console.log('API corriendo en puerto 3000');
+});
