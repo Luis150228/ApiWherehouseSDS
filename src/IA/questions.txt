@@ -1,11 +1,30 @@
-// src/middleware/logger.js
+este es un ejemplo de token generado 
 
-const logger = (req, res, next) => {
-  console.log(`🟢 ${req.method} ${req.originalUrl}`);
-  console.log('Body:', req.body);
-  console.log('Params:', req.params);
-  console.log('Query:', req.query);
-  next(); // Sigue al siguiente middleware o controller
-};
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAwMCwidXNlciI6IkMzNTY4ODIiLCJpYXQiOjE3NTAzNTQ0MDAsImV4cCI6MTc1MDM2NTIwMH0.gL7QB1az5fVdDHmvl5hHAfbkRD5klGLZNKhWxpEuh00",
+  "nombre": "3LUIS RANGEL DIAZ",
+  "user": "C356882"
+}
 
-export default logger;
+esto envio 
+
+let headersList = {
+ "Accept": "*/*",
+ "User-Agent": "Thunder Client (https://www.thunderclient.com)",
+ "authorization": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAwMCwidXNlciI6IkMzNTY4ODIiLCJpYXQiOjE3NTAzNTQ0MDAsImV4cCI6MTc1MDM2NTIwMH0.gL7QB1az5fVdDHmvl5hHAfbkRD5klGLZNKhWxpEuh00"
+}
+
+let response = await fetch("http://localhost:3000/api/users", { 
+  method: "GET",
+  headers: headersList
+});
+
+let data = await response.text();
+console.log(data);
+
+
+y esto me responde 
+
+{
+  "error": "Token no proporcionado o mal formado"
+}

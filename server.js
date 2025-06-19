@@ -7,6 +7,7 @@ import sequelize from './src/config/db.js';
 import errorHandler from './src/middleware/errorHandler.js';
 
 // Importamos las rutas
+import authRoutes from './src/routes/auth.routes.js';
 import userRoutes from './src/routes/user.routes.js';
 import logger from './src/middleware/logger.js';
 // import inventoryRoutes from './src/routes/inventory.routes.js';
@@ -29,6 +30,7 @@ app.get('/health', (req, res) => {
 });
 
 // Rutas de la API
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 // app.use('/api/inventory', inventoryRoutes);
 
