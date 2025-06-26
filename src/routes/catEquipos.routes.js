@@ -5,6 +5,6 @@ import { getCatequipo, getCatequipos } from '../controllers/catalogoEquipos/getC
 const router = express.Router();
 
 router.get('/', authenticate,getCatequipos );
-router.get('/', authenticate,getCatequipo );
+router.get('/:id', authenticate,getCatequipo );
 
 export default router

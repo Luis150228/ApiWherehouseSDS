@@ -12,7 +12,7 @@ export const getCatequipos = async (req, res, next) => {
 export const getCatequipo = async (req, res, next) => {
     try {
         console.log(req)
-        const idequipo = req.id
+        const idequipo = req.params.id
         console.log(idequipo)
         const [getEquipo] = await sequelize.query('CALL stp_catEquipo(:idequipo)', {
             replacements: {idequipo}
