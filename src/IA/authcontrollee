@@ -1,0 +1,14 @@
+// Enviar token como cookie segura
+res.cookie('token', token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production', // solo con HTTPS en producción
+  sameSite: 'Strict',
+  maxAge: 3 * 60 * 60 * 1000 // 3 horas
+});
+
+// Puedes seguir enviando otros datos si quieres
+res.json({
+  nombre: usuario.nombre,
+  user: usuario.user,
+  mensaje: 'Login exitoso'
+});
