@@ -33,7 +33,23 @@ export const login = async (req, res, next) => {
       replacements: { num_user: usuario.num_user, token }
     });
 
-    res.json({ token, nombre: usuario.nombre, user: usuario.user });
+    // res.json({ token, nombre: usuario.nombre, user: usuario.user });
+
+    // res.cookie('token', token, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === 'production', // solo con HTTPS en producción
+    //   sameSite: 'Strict',
+    //   maxAge: 3 * 60 * 60 * 1000 // 3 horas
+    // });
+
+    // Puedes seguir enviando otros datos si quieres
+    res.json({
+      nombre: usuario.nombre,
+      user: usuario.user,
+      token: token,
+      mensaje: 'Login exitoso'
+    });
+
   } catch (error) {
     next(error);
   }

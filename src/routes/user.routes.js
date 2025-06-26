@@ -1,8 +1,7 @@
 import express from 'express';
+import authenticate from '../middleware/authenticate.js';
 import { getUsers } from '../controllers/users/getUser.controller.js';
 import { updateUsers } from '../controllers/users/updateUser.controller.js';
-import validateHeaders from '../middleware/validateHeaders.js';
-import authenticate from '../middleware/authenticate.js';
 import { createUsers } from '../controllers/users/create.controller.js';
 import { getUserInfo } from '../controllers/users/getUserInfo.controller.js';
 

@@ -10,7 +10,7 @@ const authenticate = (req, res, next) => {
 
   try {
     const decoded = verifyToken(token);
-    console.log(decoded)
+    // console.log(decoded)
     req.user = decoded; // Datos como id, user, etc.
     next();
   } catch (err) {

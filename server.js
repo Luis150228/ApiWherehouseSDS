@@ -3,14 +3,15 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+// import cookieParser from 'cookie-parser';
 import sequelize from './src/config/db.js';
 import errorHandler from './src/middleware/errorHandler.js';
 
 // Importamos las rutas
 import authRoutes from './src/routes/auth.routes.js';
 import userRoutes from './src/routes/user.routes.js';
+import catequiposRoutes from './src/routes/catEquipos.routes.js';
 import logger from './src/middleware/logger.js';
-// import inventoryRoutes from './src/routes/inventory.routes.js';
 
 // Configuramos las variables de entorno
 dotenv.config();
@@ -21,8 +22,13 @@ const app = express();
 // Middlewares globales
 app.use(helmet());
 app.use(cors());
+// app.use(cors({
+//   origin: 'http://localhost:5173',
+//   credentials: true
+// }));
 app.use(morgan('dev'));
 app.use(express.json());
+// app.use(cookieParser());
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -32,6 +38,7 @@ app.get('/health', (req, res) => {
 // Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/catequipos', catequiposRoutes);
 // app.use('/api/inventory', inventoryRoutes);
 
 // Middlewares
