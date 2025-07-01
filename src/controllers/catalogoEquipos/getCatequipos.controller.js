@@ -12,8 +12,8 @@ export const getCatequipos = async (req, res, next) => {
 export const getCatequipo = async (req, res, next) => {
     try {
         console.log(req)
-        const idequipo = req.params.id
-        console.log(idequipo)
+        const idequipo = parseInt(req.params.id)
+        console.log("Se enviara al SP", idequipo, typeof idequipo)
         const [getEquipo] = await sequelize.query('CALL stp_catEquipo(:idequipo)', {
             replacements: {idequipo}
         });
@@ -24,6 +24,7 @@ export const getCatequipo = async (req, res, next) => {
 
         res.json(getEquipo)
     } catch (error) {
+        console.error('Error SQL :', error)
         next(error)
     }
 }
