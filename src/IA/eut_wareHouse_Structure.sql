@@ -556,7 +556,7 @@ SET let_dateCreate = (SELECT eut_hour());
 
 IF var_grupo = 'EAF' OR var_grupo = 'Accesorio' THEN
 	IF let_userLevel <= 1 AND let_userPuesto = 'Admin' THEN
-		INSERT INTO `almacen_catalogoequipos` (`grupo`, `tipo_equipo`, `marca`, `descripcion`, `modelo`, `imagen`, `usr_registro`, `f_registro`) VALUES (var_grupo, var_tipo_equipo, var_marca, var_description, var_modelo, var_imagen, let_user, let_dateCreate);
+		INSERT INTO `almacen_catalogoequipos` (`grupo`, `npvr`, `tipo_equipo`, `marca`, `descripcion`, `modelo`, `imagen`, `usr_registro`, `f_registro`) VALUES (var_grupo, 7, var_tipo_equipo, var_marca, var_description, var_modelo, var_imagen, let_user, let_dateCreate);
 		SELECT `grupo`, `tipo_equipo`, `marca`, `descripcion`, `imagen`, `estatus`, `usr_registro`, `f_registro`, '201' as 'code', 'Equipo creado correctamente' as 'response' FROM `almacen_catalogoequipos` WHERE usr_registro = let_user AND `f_registro` = let_dateCreate ORDER BY idequipo DESC limit 1; 
 
 	ELSE
@@ -609,6 +609,59 @@ CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_catEquiposList`()
 BEGIN
 
 SELECT idequipo, grupo, tipo_equipo, marca, modelo, descripcion, imagen, estatus, usr_registro, f_registro, usr_modifica, f_modifica FROM almacen_catalogoequipos;
+
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `stp_catEquipoUpdate` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ALLOW_INVALID_DATES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_catEquipoUpdate`(var_idequipo INT, var_grupo VARCHAR(11), var_tipo_equipo VARCHAR(250), var_marca VARCHAR(125), var_description TINYTEXT, var_modelo VARCHAR(250), var_cb VARCHAR(250), var_imagen LONGTEXT, var_estatus VARCHAR(11), var_token LONGTEXT)
+BEGIN
+
+DECLARE let_numuser VARCHAR(50);
+DECLARE let_user VARCHAR(10);
+DECLARE let_userLevel INT;
+DECLARE let_userPuesto VARCHAR(10);
+DECLARE let_estatus INT;
+DECLARE let_dateCreate DATETIME;
+
+IF var_estatus = 'activo' THEN
+	SET let_estatus = 1;
+ELSE
+	SET let_estatus = 0;
+END IF;
+
+SET let_numuser = (SELECT fn_actualUser(var_token));
+SET let_user = (SELECT fn_userUser(let_numuser));
+SET let_userLevel = (SELECT fn_userLevel(let_numuser));
+SET let_userPuesto = (SELECT fn_userPuesto(let_numuser));
+SET let_dateCreate = (SELECT eut_hour());
+
+IF var_grupo = 'EAF' OR var_grupo = 'Accesorio' THEN
+	IF let_userLevel <= 1 AND let_userPuesto = 'Admin' THEN
+		UPDATE `almacen_catalogoequipos` SET `grupo` = var_grupo, `tipo_equipo` = var_tipo_equipo, `marca` = var_marca, `descripcion` = var_description, `modelo` = var_modelo, `cod_barras` = var_cb, `imagen` = var_imagen, `estatus` = let_estatus, `usr_modifica` = let_user, `f_modifica` = let_dateCreate WHERE (`idequipo` = var_idequipo);
+
+		SELECT `grupo`, `tipo_equipo`, `marca`, `descripcion`, `imagen`, IF(`estatus` = 1, "Activo", "Inactivo") as 'estatus', `usr_registro`, `f_modifica`, `f_modifica`, '200' as 'code', 'Equipo modificado correctamente' as 'response' FROM `almacen_catalogoequipos` WHERE usr_modifica = let_user AND `idequipo` = var_idequipo limit 1; 
+
+	ELSE
+		SELECT '401' as 'code', 'No tiene permiso para acceder al recurso' AS 'response';
+	END IF;
+ELSE
+	SELECT '400' as 'code', 'Tipo de equipo Desconocido' AS 'response';
+
+-- END IF;
+END IF;
 
 END ;;
 DELIMITER ;
@@ -781,4 +834,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-07-10 12:47:50
+-- Dump completed on 2025-07-10 13:34:06
