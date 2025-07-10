@@ -652,7 +652,7 @@ IF var_grupo = 'EAF' OR var_grupo = 'Accesorio' THEN
 	IF let_userLevel <= 1 AND let_userPuesto = 'Admin' THEN
 		UPDATE `almacen_catalogoequipos` SET `grupo` = var_grupo, `tipo_equipo` = var_tipo_equipo, `marca` = var_marca, `descripcion` = var_description, `modelo` = var_modelo, `cod_barras` = var_cb, `imagen` = var_imagen, `estatus` = let_estatus, `usr_modifica` = let_user, `f_modifica` = let_dateCreate WHERE (`idequipo` = var_idequipo);
 
-		SELECT `grupo`, `tipo_equipo`, `marca`, `descripcion`, `imagen`, IF(`estatus` = 1, "Activo", "Inactivo") as 'estatus', `usr_registro`, `f_modifica`, `f_modifica`, '200' as 'code', 'Equipo modificado correctamente' as 'response' FROM `almacen_catalogoequipos` WHERE usr_modifica = let_user AND `idequipo` = var_idequipo limit 1; 
+		SELECT `grupo`, `tipo_equipo`, `marca`, `descripcion`, `imagen`, IF(`estatus` = 1, "Activo", "Inactivo") as 'estatus', `usr_registro`, `usr_modifica`, `f_modifica`, '200' as 'code', 'Equipo modificado correctamente' as 'response' FROM `almacen_catalogoequipos` WHERE usr_modifica = let_user AND `idequipo` = var_idequipo limit 1; 
 
 	ELSE
 		SELECT '401' as 'code', 'No tiene permiso para acceder al recurso' AS 'response';
@@ -834,4 +834,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-07-10 13:34:06
+-- Dump completed on 2025-07-10 13:38:35
