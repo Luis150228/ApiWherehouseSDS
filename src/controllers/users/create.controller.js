@@ -16,7 +16,6 @@ export const createUsers = async (req, res, next) => {
 				replacements: { user, nombre, ubicacion, tipo_almacen, nivel, ctrl_acceso, puesto, password, estatus },
 			}
 		);
-		console.log(res);
 		res.status(201).json({
 			message: 'Usuario creado correctamente',
 			data: createUser,
