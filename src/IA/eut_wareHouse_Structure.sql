@@ -38,7 +38,7 @@ CREATE TABLE `almacen_catalogoequipos` (
   `usr_modifica` varchar(45) DEFAULT NULL,
   `f_modifica` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`idequipo`)
-) ENGINE=InnoDB AUTO_INCREMENT=291 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=295 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -554,12 +554,18 @@ SET let_userLevel = (SELECT fn_userLevel(let_numuser));
 SET let_userPuesto = (SELECT fn_userPuesto(let_numuser));
 SET let_dateCreate = (SELECT eut_hour());
 
-SELECT let_numuser, let_user, let_userLevel, let_userPuesto;
-IF let_userLevel <= 1 AND let_userPuesto = 'Admin' THEN
-	INSERT INTO `almacen_catalogoequipos` (`grupo`, `tipo_equipo`, `marca`, `descripcion`, `modelo`, `imagen`, `usr_registro`, `f_registro`) VALUES (var_grupo, var_tipo_equipo, var_marca, var_description, var_modelo, var_imagen, let_user, let_dateCreate);
-    SELECT `grupo`, `tipo_equipo`, `marca`, `descripcion`, `imagen`, `estatus`, `usr_registro`, `f_registro` FROM `almacen_catalogoequipos` WHERE usr_registro = let_user AND `f_registro` = let_dateCreate ORDER BY idequipo DESC limit 1; 
+IF var_grupo = 'EAF' OR var_grupo = 'Accesorio' THEN
+	IF let_userLevel <= 1 AND let_userPuesto = 'Admin' THEN
+		INSERT INTO `almacen_catalogoequipos` (`grupo`, `tipo_equipo`, `marca`, `descripcion`, `modelo`, `imagen`, `usr_registro`, `f_registro`) VALUES (var_grupo, var_tipo_equipo, var_marca, var_description, var_modelo, var_imagen, let_user, let_dateCreate);
+		SELECT `grupo`, `tipo_equipo`, `marca`, `descripcion`, `imagen`, `estatus`, `usr_registro`, `f_registro`, '201' as 'code', 'Equipo creado correctamente' as 'response' FROM `almacen_catalogoequipos` WHERE usr_registro = let_user AND `f_registro` = let_dateCreate ORDER BY idequipo DESC limit 1; 
+
+	ELSE
+		SELECT '401' as 'code', 'No tiene permiso para acceder al recurso' AS 'response';
+	END IF;
 ELSE
-	SELECT 'NO CUENTA CON EL NIVEL O PUESTO NECESARIO' AS 'response';
+	SELECT '400' as 'code', 'Tipo de equipo Desconocido' AS 'response';
+
+-- END IF;
 END IF;
 
 END ;;
@@ -775,4 +781,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-07-10 12:00:48
+-- Dump completed on 2025-07-10 12:47:50
