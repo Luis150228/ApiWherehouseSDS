@@ -11,6 +11,7 @@ import errorHandler from './src/middleware/errorHandler.js';
 import authRoutes from './src/routes/auth.routes.js';
 import userRoutes from './src/routes/user.routes.js';
 import catequiposRoutes from './src/routes/catEquipos.routes.js';
+import suppliers from './src/routes/supplier.routes.js';
 import logger from './src/middleware/logger.js';
 
 // Configuramos las variables de entorno
@@ -39,6 +40,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/catequipos', catequiposRoutes);
+app.use('/api/supplier', suppliers);
 // app.use('/api/inventory', inventoryRoutes);
 
 // Middlewares
