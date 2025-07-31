@@ -1,5 +1,5 @@
-/**Generic BEGIN**/
-
+**Generic BEGIN**/
+ 
 &Expediente: 
 &num_contacto:
 &nombre2_contacto:
@@ -15,14 +15,13 @@
 &Tipo_usuario: (sucursal. Corporativo.
 , Contac Center)
 &Descripcion_incidente: pero  
-&Pantalla_error: 
-
+&Pantalla_error:
+ 
 &Para VPN           
 &Carrier:
 &IP del Carrier:
-
+ 
 /**Generic END**/
-
 
 
 /**STS BEGIN**/
