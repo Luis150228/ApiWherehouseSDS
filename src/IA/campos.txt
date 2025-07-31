@@ -1,0 +1,41 @@
+/**Generic BEGIN**/
+
+_Expediente: 
+_Celular y/o extension:
+_2do contacto (nombre / extension y/o celular):
+_Correo:
+_CC: 
+_Region:
+_UPN:
+_usuario N:
+_IP:
+_Hostname:
+_Tipo usuario (sucursal. Corporativo., Contac Center):
+_Descripcion del incidente: 
+_Pantalla de error: 
+
+_Para VPN           
+_Carrier:
+_IP del Carrier:
+
+/**Generic END**/
+
+
+
+Expediente: 
+Celular y/o extension:
+2do contacto (nombre / extension y/o celular):
+Correo:
+CC: 
+Region:
+UPN:
+usuario N:
+IP:
+Hostname:
+Tipo usuario (sucursal. Corporativo., Contac Center):
+Descripcion del incidente: 
+Pantalla de error: 
+
+Para VPN           
+Carrier:
+IP del Carrier:
