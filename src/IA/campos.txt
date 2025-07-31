@@ -1,41 +1,54 @@
 /**Generic BEGIN**/
 
-_Expediente: 
-_Celular y/o extension:
-_2do contacto (nombre / extension y/o celular):
-_Correo:
-_CC: 
-_Region:
-_UPN:
-_usuario N:
-_IP:
-_Hostname:
-_Tipo usuario (sucursal. Corporativo., Contac Center):
-_Descripcion del incidente: 
-_Pantalla de error: 
+&Expediente: 
+&num_contacto:
+&nombre2_contacto:
+&ext2_contacto:
+&cel2_contacto:
+&Correo:
+&CC: 
+&Region:
+&UPN:
+&usuario_N:
+&IP:
+&Hostname:
+&Tipo_usuario: (sucursal. Corporativo.
+, Contac Center)
+&Descripcion_incidente: pero  
+&Pantalla_error: 
 
-_Para VPN           
-_Carrier:
-_IP del Carrier:
+&Para VPN           
+&Carrier:
+&IP del Carrier:
 
 /**Generic END**/
 
 
 
-Expediente: 
-Celular y/o extension:
-2do contacto (nombre / extension y/o celular):
-Correo:
-CC: 
-Region:
-UPN:
-usuario N:
-IP:
-Hostname:
-Tipo usuario (sucursal. Corporativo., Contac Center):
-Descripcion del incidente: 
-Pantalla de error: 
-
-Para VPN           
-Carrier:
-IP del Carrier:
+/**STS BEGIN**/
+&Folio:
+&Fecha:
+&Expediente:
+&Nombre:
+&num_contacto:
+&nombre2_contacto:
+&ext2_contacto:
+&cel2_contacto:
+&Correo:
+&Puesto:
+&CC:
+&Ubicacion:
+&Región:
+&Ciudad:
+&Estado:
+&UPN:
+&Usuario N:
+&IP:
+&Hostname:
+&LU (terminal):
+&Tipo_usuario: (sucursal. Corporativo.
+, Contac Center)
+&Descripción_incidente:
+&Pantalla_error_con_fecha:
+&Tipo_enlace:
+/**STS END**/
