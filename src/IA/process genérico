@@ -1,73 +1,6 @@
-CREATE TABLE incident_details (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    incident_number VARCHAR(50),
-    expediente VARCHAR(255),
-    num_contacto VARCHAR(255),
-    nombre2_contacto VARCHAR(255),
-    ext2_contacto VARCHAR(255),
-    cel2_contacto VARCHAR(255),
-    correo VARCHAR(255),
-    cc VARCHAR(255),
-    region VARCHAR(255),
-    upn VARCHAR(255),
-    usuario_n VARCHAR(255),
-    ip VARCHAR(50),
-    hostname VARCHAR(255),
-    tipo_usuario VARCHAR(100),
-    descripcion_incidente TEXT,
-    pantalla_error TEXT,
-    carrier VARCHAR(255),
-    ip_carrier VARCHAR(50),
-    fecha_procesado TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
 DELIMITER $$
 
-CREATE PROCEDURE sp_parse_incident_generic (
-    IN p_incident_number VARCHAR(50),
-    IN p_description TEXT
-)
-BEGIN
-    -- Limpiar delimitadores BEGIN/END
-    SET p_description = REPLACE(p_description, '/**Generic BEGIN**/', '');
-    SET p_description = REPLACE(p_description, '/**Generic END**/', '');
-
-    INSERT INTO incident_details (
-        incident_number, expediente, num_contacto, nombre2_contacto,
-        ext2_contacto, cel2_contacto, correo, cc, region, upn,
-        usuario_n, ip, hostname, tipo_usuario, descripcion_incidente,
-        pantalla_error, carrier, ip_carrier
-    )
-    VALUES (
-        p_incident_number,
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&num_contacto:', 1), '&Expediente:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&nombre2_contacto:', 1), '&num_contacto:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&ext2_contacto:', 1), '&nombre2_contacto:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&Correo:', 1), '&ext2_contacto:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&CC:', 1), '&Correo:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&Region:', 1), '&CC:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&UPN:', 1), '&Region:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&usuario_N:', 1), '&UPN:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&IP:', 1), '&usuario_N:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&Hostname:', 1), '&IP:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&Tipo_usuario:', 1), '&Hostname:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&Descripcion_incidente:', 1), '&Tipo_usuario:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&Pantalla_error:', 1), '&Descripcion_incidente:', -1)),
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p_description, '&IP del Carrier:', 1), '&Carrier:', -1)),
-        TRIM(SUBSTRING_INDEX(p_description, '&IP del Carrier:', -1))
-    );
-END$$
-
-DELIMITER ;
-
-
-CALL sp_parse_incident_generic('INC057036221', @description_text);
-
-
-DELIMITER $$
-
-CREATE PROCEDURE sp_parse_from_existing()
+CREATE PROCEDURE stp_parse_from_existing()
 BEGIN
     DECLARE done INT DEFAULT 0;
     DECLARE v_number VARCHAR(50);
@@ -96,7 +29,7 @@ BEGIN
         );
 
         -- Insertar datos parseados
-        INSERT INTO incident_details (
+        INSERT INTO `eut_incident_generics` (
             incident_number, expediente, num_contacto, nombre2_contacto,
             ext2_contacto, cel2_contacto, correo, cc, region, upn,
             usuario_n, ip, hostname, tipo_usuario, descripcion_incidente,
@@ -127,3 +60,6 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+SELECT * FROM eut_reportesbk.servicenow_reportes r where incidencia_principal = 'INC057036221' or folio = 'INC057036221';
+
