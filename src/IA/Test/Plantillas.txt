@@ -1,3 +1,118 @@
-SELECT * FROM eut_reportesbk.servicenow_reportes r where incidencia_principal = 'INC057036221' or (folio = 'INC057036221' and incidencia_secundarias >= 1);
+ALTER TABLE eut_reportesbk.servicenow_reportes
+ADD INDEX idx_principal_secundarias_resuelto (incidencia_principal, incidencia_secundarias, resuelto);
 
-esta es una consulta de ejemmplo los campos para buscar los reportes genericos es que incidencia_principal no este vacia o nula de ahi extraer los numeros de folio para poder tener tambien los datos del incidencia_principal que es el folio
+
+
+DELIMITER $$
+
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_tabular_plantillas_generico`(
+    IN var_folio VARCHAR(20)
+)
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE v_folio VARCHAR(20);
+    DECLARE v_texto LONGTEXT;
+    DECLARE v_bloque LONGTEXT;
+
+    -- Cursor basado en query ejemplo y condición de plantillas genéricas
+    DECLARE cur CURSOR FOR
+        SELECT r.folio,
+               CASE
+                   WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
+                   WHEN r.obs_notasresolucion LIKE '%/**Generic BEGIN**/%' THEN r.obs_notasresolucion
+                   ELSE NULL
+               END AS texto
+        FROM eut_reportesbk.servicenow_reportes r
+        WHERE r.incidencia_principal = var_folio
+           OR (r.folio = var_folio AND r.incidencia_secundarias >= 1);
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    -- Tabla temporal para resultados
+    DROP TEMPORARY TABLE IF EXISTS tmp_tabla_plantillas;
+    CREATE TEMPORARY TABLE tmp_tabla_plantillas (
+        folio VARCHAR(20),
+        Expediente VARCHAR(150),
+        ext_contacto VARCHAR(100),
+        cel_contacto VARCHAR(100),
+        nombre2_contacto VARCHAR(200),
+        cel2_contacto VARCHAR(100),
+        Correo VARCHAR(200),
+        Puesto VARCHAR(200),
+        CC VARCHAR(50),
+        Region VARCHAR(100),
+        UPN VARCHAR(150),
+        usuario_N VARCHAR(100),
+        IP VARCHAR(100),
+        Hostname VARCHAR(150),
+        Tipo_usuario VARCHAR(100),
+        Descripcion_incidente VARCHAR(500),
+        Numero_afectados VARCHAR(50),
+        Carrier VARCHAR(100),
+        `IP del Carrier` VARCHAR(100)
+    );
+
+    OPEN cur;
+
+    read_loop: LOOP
+        FETCH cur INTO v_folio, v_texto;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+        -- Extraer bloque entre BEGIN y END
+        IF v_texto IS NOT NULL THEN
+            SET v_bloque = REGEXP_SUBSTR(v_texto, '/\\*\\*Generic BEGIN\\*\\*/([\\s\\S]*?)/\\*\\*Generic END\\*\\*/');
+        ELSE
+            SET v_bloque = NULL;
+        END IF;
+
+        IF v_bloque IS NOT NULL THEN
+            SET v_bloque = REPLACE(v_bloque, '/**Generic BEGIN**/', '');
+            SET v_bloque = REPLACE(v_bloque, '/**Generic END**/', '');
+
+            -- Función de limpieza
+            SET v_bloque = UPPER(TRIM(REGEXP_REPLACE(v_bloque, '[[:space:]]+', ' ')));
+
+            INSERT INTO tmp_tabla_plantillas
+            SELECT
+                v_folio,
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&EXPEDIENTE:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&EXT_CONTACTO:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CEL_CONTACTO:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&NOMBRE2_CONTACTO:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CEL2_CONTACTO:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CORREO:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&PUESTO:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CC:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&REGION:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&UPN:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&USUARIO_N:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(REPLACE(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&IP:', -1), '\n', 1)), ' ', ''), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&HOSTNAME:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&TIPO_USUARIO:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&DESCRIPCION_INCIDENTE:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&NUMERO_AFECTADOS:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CARRIER:', -1), '\n', 1)), ''), 'SIN DATOS'),
+                IFNULL(NULLIF(REPLACE(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&IP DEL CARRIER:', -1), '\n', 1)), ' ', ''), ''), 'SIN DATOS');
+        ELSE
+            -- Si no hay plantilla, devolver con SIN DATOS
+            INSERT INTO tmp_tabla_plantillas (folio, Expediente, ext_contacto, cel_contacto, nombre2_contacto,
+                                              cel2_contacto, Correo, Puesto, CC, Region, UPN, usuario_N,
+                                              IP, Hostname, Tipo_usuario, Descripcion_incidente, Numero_afectados,
+                                              Carrier, `IP del Carrier`)
+            VALUES (v_folio, 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                    'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                    'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                    'SIN DATOS', 'SIN DATOS');
+        END IF;
+
+    END LOOP;
+
+    CLOSE cur;
+
+    -- Resultado final
+    SELECT * FROM tmp_tabla_plantillas;
+
+END$$
+DELIMITER ;
