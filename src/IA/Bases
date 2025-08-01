@@ -1,0 +1,155 @@
+actua como un experto en dabses de datos quiero optimizar las tablas para una consulta mas rapida en MARIADB sus puntos de liga esta en `eut_workday`.`nombre_full`, `servicenow_reportes`.`abierto_por`, en `eut_workday`.`usuario` y  `servicenow_reportes`.`folio` no puede dos registro iguales serian los Key de sus respetivas tablas pero quiero optimizarlas al full porque llevan mas de 100,000 registros cada una y se cruzaran
+
+DELIMITER $$
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_eut_workdayBridge`(var_token LONGTEXT, var_destino VARCHAR(50))
+BEGIN
+DECLARE let_alamacen varchar(255);
+DECLARE let_user varchar(255);
+DECLARE let_userId INT;
+DECLARE dateActualizado datetime;
+DECLARE dateEdodatabase datetime;
+DECLARE let_dateWorday datetime;
+
+SET let_userId = (select tokenValidate(var_token));
+set let_user = (SELECT `user` FROM eut_users where num_user = let_userId);
+set let_alamacen = (SELECT ubicacion FROM eut_users where `user` = let_user);
+set let_dateWorday = (SELECT concat(date(dbUpdate), ' 00:00:00') FROM edodatabase where (`id` >= 0) AND `nombre` = var_destino);
+
+IF let_userId >= 1 THEN
+	UPDATE `eut_workday` SET `estatus_expediente` = 'WD Inactivo' WHERE (`usuario` != 'C000000') and `fecha_actualizacion` < let_dateWorday;
+    -- UPDATE `inventario_lineas` SET `workday_status` = 'WD Inactivo' WHERE (`num_movil` != '0000001234') and `workday_date` < let_dateWorday;
+
+	INSERT INTO `eut_workday` (`usuario`, `n_user`, `nombre_full`, `nombre`, `apellidop`, `apellidom`, `mail`, `upn_wd`, `puesto`, `cc_wd`, `cc_type`, `area`, `ubicacion`, `region`, `supervisor`, `empresa`, `estatus_expediente`, `user_update`, `fecha_alta`, `fecha_actualizacion`) SELECT `usuario`, `n_user`, `nombre_full`, `nombre`, `apellidop`, `apellidom`, `mail`, `upn_wd`, `puesto`, `cc_wd`, `cc_type`, `area`, `ubicacion`, `region`, `supervisor`, `empresa`, `estatus_expediente`, `user_update`, `fecha_alta`, `fecha_actualizacion` FROM `eut_workday_bridge` ON DUPLICATE KEY UPDATE `mail` = VALUES(`mail`), `puesto` = VALUES(`puesto`), `area` = VALUES(`area`), `ubicacion` = VALUES(`ubicacion`), `supervisor` = VALUES(`supervisor`), `empresa` = VALUES(`empresa`), `estatus_expediente` = VALUES(`estatus_expediente`),  `cc_wd` = VALUES(`cc_wd`), `cc_type` = VALUES(`cc_type`), `upn_wd` = VALUES(`upn_wd`), `user_update` = VALUES(`user_update`), `fecha_actualizacion` = VALUES(`fecha_actualizacion`);
+
+	SET dateActualizado = (SELECT max(`fecha_alta`) FROM `eut_workday_bridge` WHERE 1);
+	SET dateEdodatabase = (SELECT `dbUpdate` FROM `edodatabase` WHERE `nombre` = var_destino);
+
+	IF dateActualizado > dateEdodatabase THEN
+		UPDATE `edodatabase` SET `dbUpdate` = dateActualizado WHERE (`id` >= 0) AND `nombre` = var_destino;
+	END IF;
+    
+    DELETE FROM `eut_workday` WHERE (`usuario` like '%Usuario%');
+    DELETE FROM `eut_workday` WHERE (`usuario` = '');
+	TRUNCATE `eut_workday_bridge`;
+    
+    -- UPDATE `inventario_lineas` l JOIN `workday` w ON l.`expediente` = w.`usuario` SET l.`asignado_a` = w.`nombre_full`, l.`email` = w.`mail`, l.`area` = w.`area`, l.`puesto` = w.`puesto`, `empresa_santander` = w.`empresa`, l.`supervisor` = w.`supervisor` , l.`ubicacion_wd` = w.`ubicacion`, l.`workday_date` = w.`fecha_actualizacion`, l.`workday_status` = w.`estatus_expediente`, l.`workday_id` = w.`usuario` WHERE (`num_movil` != '0000001234') AND (`expediente` IS NOT NULL AND `expediente` != '');
+
+	SELECT `etiqueta`, `dbUpdate`, 0 AS 'link' FROM `edodatabase` WHERE `nombre` = var_destino;
+END IF;
+END$$
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_eut_workday`(var_nombrefull VARCHAR(250), var_puesto VARCHAR(250), var_area VARCHAR(250), var_cc_wd VARCHAR(250), var_cc_type VARCHAR(250), var_empresa LONGTEXT, var_ubicacion VARCHAR(250), var_region VARCHAR(250), var_supervisor VARCHAR(150), var_mail VARCHAR(50), var_n_user VARCHAR(15), var_usuario VARCHAR(15), var_upn VARCHAR(50), var_nombre VARCHAR(50), var_apellidop VARCHAR(50), var_apellidom VARCHAR(50), var_token LONGTEXT, var_fecha DATETIME)
+BEGIN
+DECLARE let_alamacen varchar(255);
+DECLARE let_user varchar(255);
+DECLARE let_userId INT;
+
+SET let_userId = (select tokenValidate(var_token));
+set let_user = (SELECT `user` FROM eut_users where num_user = let_userId);
+set let_alamacen = (SELECT ubicacion FROM eut_users where `user` = let_user);
+
+IF let_userId >= 1 THEN
+INSERT INTO `eut_workday_bridge` (`usuario`, `n_user`, `nombre_full`, `nombre`, `apellidop`, `apellidom`, `mail`, `upn_wd`, `puesto`, `cc_wd`, `cc_type`, `area`, `ubicacion`, `region`, `supervisor`, `empresa`, `estatus_expediente`, `user_update`, `fecha_alta`, `fecha_actualizacion`) VALUES (var_usuario, var_n_user, var_nombrefull, var_nombre, var_apellidop, var_apellidom, var_mail, var_upn, var_puesto, var_cc_wd, var_cc_type, var_area, var_ubicacion, var_region, var_supervisor, var_empresa, 'WD Activo', let_user, var_fecha, var_fecha);
+END IF;
+
+SELECT COUNT(*) as 'total', max(`fecha_alta`) as 'actualizado', 'workday_eut' as 'type' FROM `eut_workday_bridge`;
+
+END$$
+DELIMITER ;
+
+
+CREATE TABLE `eut_workday` (
+  `usuario` varchar(8) NOT NULL,
+  `n_user` varchar(8) NOT NULL,
+  `nombre_full` varchar(150) NOT NULL,
+  `nombre` varchar(150) NOT NULL,
+  `apellidop` varchar(150) NOT NULL,
+  `apellidom` varchar(150) NOT NULL,
+  `mail` varchar(150) DEFAULT NULL,
+  `upn_wd` varchar(150) DEFAULT NULL,
+  `puesto` varchar(250) NOT NULL,
+  `cc_wd` varchar(250) NOT NULL,
+  `cc_type` varchar(250) NOT NULL,
+  `area` varchar(250) NOT NULL,
+  `ubicacion` varchar(150) NOT NULL,
+  `region` varchar(150) NOT NULL,
+  `supervisor` varchar(250) NOT NULL,
+  `empresa` longtext NOT NULL,
+  `estatus_expediente` varchar(45) NOT NULL DEFAULT 'WD Activo',
+  `user_update` varchar(45) DEFAULT NULL,
+  `fecha_alta` datetime DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+
+CREATE TABLE `servicenow_reportes` (
+  `folio` varchar(20) NOT NULL,
+  `abierto` datetime DEFAULT NULL,
+  `resuelto` datetime DEFAULT NULL,
+  `cerrado` datetime DEFAULT NULL,
+  `creado_por` varchar(250) DEFAULT NULL,
+  `grup_asig` varchar(150) DEFAULT NULL,
+  `asig_a` varchar(150) DEFAULT NULL,
+  `estatus` varchar(20) DEFAULT NULL,
+  `categoria` varchar(150) DEFAULT NULL,
+  `subcategoria` varchar(150) DEFAULT NULL,
+  `subcategoria2` varchar(120) DEFAULT NULL,
+  `tipoproblema` varchar(120) DEFAULT NULL,
+  `nombreproyecto` varchar(150) DEFAULT NULL,
+  `sla` int DEFAULT NULL,
+  `ceco` int DEFAULT NULL,
+  `ubicacion` varchar(150) DEFAULT NULL,
+  `abierto_por` varchar(150) DEFAULT NULL,
+  `solicitante` varchar(150) DEFAULT NULL,
+  `duracion` int DEFAULT NULL,
+  `duracion_negocio` int DEFAULT NULL,
+  `empresa` varchar(150) DEFAULT NULL,
+  `descripcion` mediumtext,
+  `obs_notasresolucion` longtext,
+  `cerrado_por` varchar(150) DEFAULT NULL,
+  `resuelto_por` varchar(150) DEFAULT NULL,
+  `codigo_cierre` varchar(150) DEFAULT NULL,
+  `incidencia_principal` varchar(45) DEFAULT NULL,
+  `incidencia_secundarias` varchar(45) DEFAULT NULL,
+  `actualizado` datetime DEFAULT NULL,
+  `mail_creador` varchar(150) DEFAULT NULL,
+  `id_ext` varchar(50) DEFAULT NULL,
+  `clasificacion` varchar(50) DEFAULT NULL,
+  `aplicativo` varchar(50) DEFAULT NULL,
+  `plataforma` varchar(50) DEFAULT NULL,
+  `falla` varchar(50) DEFAULT NULL,
+  `solucion` varchar(50) DEFAULT NULL,
+  `causa_raiz` varchar(50) DEFAULT NULL,
+  `useralta` varchar(20) DEFAULT NULL,
+  `limitadores` varchar(25) DEFAULT NULL,
+  `tiempo` int DEFAULT NULL,
+  `estado` varchar(50) DEFAULT NULL,
+  `zona_ubica` varchar(50) DEFAULT NULL,
+  `zona_num` int DEFAULT NULL,
+  `region_cau` varchar(50) DEFAULT NULL,
+  `sla_tsucursales` int DEFAULT NULL,
+  `grupo_gral` varchar(50) DEFAULT NULL,
+  `grupo_local` varchar(50) DEFAULT NULL,
+  `medido` varchar(50) DEFAULT NULL,
+  `exc_user` varchar(7) DEFAULT NULL,
+  `exc_obs` tinytext,
+  `exc_clave` varchar(250) DEFAULT NULL,
+  `exc_region` varchar(145) DEFAULT NULL,
+  `exc_metrica` varchar(20) DEFAULT NULL,
+  `exc_status` varchar(150) DEFAULT 'En Metrica',
+  `suc_corp` varchar(50) DEFAULT NULL,
+  `sf_descrip_gral` varchar(150) DEFAULT NULL,
+  `sf_descrip_especif` tinytext,
+  `id_fespecif` int DEFAULT NULL,
+  `sf_descrip_type` varchar(50) DEFAULT NULL,
+  `sf_minutos` int DEFAULT NULL,
+  `semanal_rango` varchar(45) DEFAULT NULL,
+  `semanal_mes` varchar(10) DEFAULT NULL,
+  `tipos` varchar(45) DEFAULT NULL,
+  `origen` varchar(25) DEFAULT NULL,
+  `f_alta` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`folio`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
