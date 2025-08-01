@@ -1,20 +1,13 @@
-ALTER TABLE eut_reportesbk.servicenow_reportes
-ADD INDEX idx_principal_secundarias_resuelto (incidencia_principal, incidencia_secundarias, resuelto);
-
-
-
 DELIMITER $$
 
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_tabular_plantillas_generico`(
-    IN var_folio VARCHAR(20)
-)
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_tabular_plantillas_generico_pendientes`()
 BEGIN
     DECLARE done INT DEFAULT FALSE;
     DECLARE v_folio VARCHAR(20);
     DECLARE v_texto LONGTEXT;
     DECLARE v_bloque LONGTEXT;
 
-    -- Cursor basado en query ejemplo y condición de plantillas genéricas
+    -- Cursor: folios genéricos pendientes
     DECLARE cur CURSOR FOR
         SELECT r.folio,
                CASE
@@ -23,14 +16,17 @@ BEGIN
                    ELSE NULL
                END AS texto
         FROM eut_reportesbk.servicenow_reportes r
-        WHERE r.incidencia_principal = var_folio
-           OR (r.folio = var_folio AND r.incidencia_secundarias >= 1);
+        WHERE 
+            r.incidencia_principal IS NOT NULL
+            AND r.incidencia_principal <> ''
+            AND r.incidencia_secundarias > 0
+            AND (r.resuelto = '0000-00-00 00:00:00' OR r.resuelto IS NULL);
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
     -- Tabla temporal para resultados
-    DROP TEMPORARY TABLE IF EXISTS tmp_tabla_plantillas;
-    CREATE TEMPORARY TABLE tmp_tabla_plantillas (
+    DROP TEMPORARY TABLE IF EXISTS tmp_tabla_genericos;
+    CREATE TEMPORARY TABLE tmp_tabla_genericos (
         folio VARCHAR(20),
         Expediente VARCHAR(150),
         ext_contacto VARCHAR(100),
@@ -60,21 +56,20 @@ BEGIN
             LEAVE read_loop;
         END IF;
 
-        -- Extraer bloque entre BEGIN y END
+        -- Buscar bloque de plantilla
         IF v_texto IS NOT NULL THEN
             SET v_bloque = REGEXP_SUBSTR(v_texto, '/\\*\\*Generic BEGIN\\*\\*/([\\s\\S]*?)/\\*\\*Generic END\\*\\*/');
         ELSE
             SET v_bloque = NULL;
         END IF;
 
+        -- Si tiene plantilla, extraer datos
         IF v_bloque IS NOT NULL THEN
             SET v_bloque = REPLACE(v_bloque, '/**Generic BEGIN**/', '');
             SET v_bloque = REPLACE(v_bloque, '/**Generic END**/', '');
-
-            -- Función de limpieza
             SET v_bloque = UPPER(TRIM(REGEXP_REPLACE(v_bloque, '[[:space:]]+', ' ')));
 
-            INSERT INTO tmp_tabla_plantillas
+            INSERT INTO tmp_tabla_genericos
             SELECT
                 v_folio,
                 IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&EXPEDIENTE:', -1), '\n', 1)), ''), 'SIN DATOS'),
@@ -96,11 +91,11 @@ BEGIN
                 IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CARRIER:', -1), '\n', 1)), ''), 'SIN DATOS'),
                 IFNULL(NULLIF(REPLACE(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&IP DEL CARRIER:', -1), '\n', 1)), ' ', ''), ''), 'SIN DATOS');
         ELSE
-            -- Si no hay plantilla, devolver con SIN DATOS
-            INSERT INTO tmp_tabla_plantillas (folio, Expediente, ext_contacto, cel_contacto, nombre2_contacto,
-                                              cel2_contacto, Correo, Puesto, CC, Region, UPN, usuario_N,
-                                              IP, Hostname, Tipo_usuario, Descripcion_incidente, Numero_afectados,
-                                              Carrier, `IP del Carrier`)
+            -- Si NO tiene plantilla, registrar con SIN DATOS
+            INSERT INTO tmp_tabla_genericos (folio, Expediente, ext_contacto, cel_contacto, nombre2_contacto,
+                                             cel2_contacto, Correo, Puesto, CC, Region, UPN, usuario_N,
+                                             IP, Hostname, Tipo_usuario, Descripcion_incidente, Numero_afectados,
+                                             Carrier, `IP del Carrier`)
             VALUES (v_folio, 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
                     'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
                     'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
@@ -111,8 +106,9 @@ BEGIN
 
     CLOSE cur;
 
-    -- Resultado final
-    SELECT * FROM tmp_tabla_plantillas;
+    -- Resultado final: Incluye folios con y sin plantilla
+    SELECT * FROM tmp_tabla_genericos;
 
 END$$
+
 DELIMITER ;
