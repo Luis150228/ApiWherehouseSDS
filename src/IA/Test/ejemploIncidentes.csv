@@ -31,8 +31,60 @@ Pantalla de error: No conecta
 Para VPN	 
 Carrier: Infinitum
 IP del Carrier: 192.168.0.4
+
+
+Plantilla 1 para Genérico: 
+/**Generic BEGIN**/
+&Expediente: c356882
+&ext_contacto:0000
+&cel_contacto:12345678
+&nombre2_contacto: jOSE ANTONIO fRANCO
+&cel2_contacto: 4545645646
+&Correo: luirangel@gruposantander.com.mx
+&Puesto:MEX INFRA EUT IT ANALYST II
+&CC: 0003
+&Region:  Centro 
+&UPN: c356882@produban.com.mx
+&usuario_N:n662610
+&IP: 180.51.115.215
+&Hostname:GTINFANC356882P
+&Tipo_usuario: Corporativo
+&Descripcion_incidente: Falla de VPN, no conecta.
+&Numero_afectados: 2-15
+Pantalla_error (se anexa hasta que lo indique Supervisor o Bandejas)
+Para VPN           
+&Carrier: tOTAL pLAY
+&IP del Carrier:192.168.0.4
+/**Generic END**/
+
+
 ","2025-07-28 12:15:37 - JANET IRIDIAN VELAZQUEZ SANCHEZ (Notas de trabajo)
 Pendiente, Se están realizando pruebas
+
+Plantilla 1 para Genérico: 
+/**Generic BEGIN**/
+&Expediente: c356882
+&ext_contacto:0000
+&cel_contacto:12345678
+&nombre2_contacto: jOSE ANTONIO fRANCO
+&cel2_contacto: 4545645646
+&Correo: luirangel@gruposantander.com.mx
+&Puesto:MEX INFRA EUT IT ANALYST II
+&CC: 0003
+&Region:  Centro 
+&UPN: c356882@produban.com.mx
+&usuario_N:n662610
+&IP: 180.51.115.215
+&Hostname:GTINFANC356882P
+&Tipo_usuario: Corporativo
+&Descripcion_incidente: Falla de VPN, no conecta.
+&Numero_afectados: 2-15
+Pantalla_error (se anexa hasta que lo indique Supervisor o Bandejas)
+Para VPN           
+&Carrier: tOTAL pLAY
+&IP del Carrier:192.168.0.4
+/**Generic END**/
+
 
 ","OMAR MARTINEZ LOBATON",,,,4,"2025-07-28 13:28:21",C072106@santander.com.mx,NULL,NULL,NULL,NULL,NULL,Nuevo,NULL,NULL,"SIN INHIBIDOR",NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"En Metrica",Corporativo,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"SNGlobal Incidentes","2025-07-28 16:02:38"
 INC057036361,"2025-07-28 11:43:43","0000-00-00 00:00:00","0000-00-00 00:00:00",,TMX_EU_Resolutores_SDK_Zona_1,"OMAR MARTINEZ LOBATON","En Espera","Software Usuario Final",Software,"Falla Navegador",,"Reportes de Navegadores (Microsoft Edge, Google Chrome)",0,0,"EDIF. CORPORATIVO BLANCO","FRANCISCA TORRES MORENO",Z929981@santander.com.mx,0,0,"Santander México","Variables:
@@ -67,6 +119,35 @@ Pantalla de error: Error de conexion
 Para VPN	 
 Carrier: Infinitum
 IP del Carrier: 192. 168.0.4
+
+
+/**Generic BEGIN**/
+&Expediente: Z929981
+&ext_contacto:0000
+&cel_contacto:7845156768
+&nombre2_contacto: oMAR lOVATON
+&cel2_contacto: 4545645646
+&Correo: franctorres@empresaexterna.com.mx
+&Puesto: IT ANALYST II
+&CC: 0003
+&Region:  Norte 
+&UPN: Z929981@santander.com.mx
+&usuario_N:n662610
+&IP: 180.177.183.87
+&Hostname:EXINETMZ929979P
+&Tipo_usuario: Corporativo
+&Descripcion_incidente: Falla de VPN, Conexión.
+&Numero_afectados: 2-8
+Pantalla_error (se anexa hasta que lo indique Supervisor o Bandejas)
+Para VPN           
+&Carrier: Infinitum
+&IP del Carrier:192. 168.0.4
+/**Generic END**/
+
+
+
+
+
 ","2025-07-28 12:15:39 - JANET IRIDIAN VELAZQUEZ SANCHEZ (Notas de trabajo)
 Nota de trabajo copiado del incidente principal: Pendiente, Se están realizando pruebas
 
@@ -76,36 +157,31 @@ Incident INC057036221 Parent Incident field added.
 ","OMAR MARTINEZ LOBATON",,,INC057036221,0,"2025-07-28 12:15:39",C072106@santander.com.mx,NULL,NULL,NULL,NULL,NULL,"En Espera",NULL,NULL,"SIN INHIBIDOR",NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"En Metrica",Corporativo,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"SNGlobal Incidentes","2025-07-28 16:02:38"
 INC057036546,"2025-07-28 11:52:10","0000-00-00 00:00:00","0000-00-00 00:00:00",,TMX_EU_Resolutores_SDK_Zona_0,"OMAR MARTINEZ LOBATON","En Espera","Software Usuario Final",Software,"Falla Navegador",,"Reportes de Navegadores (Microsoft Edge, Google Chrome)",0,0,"EDIF. CORPORATIVO CTOS QUERETARO","OMAR MARTINEZ LOBATON",Z929981@santander.com.mx,0,0,"Santander México","Variables:
 
-Tipo de Falla: Lentitud
-Correo Electrónico: olobaton@santander.com.mx
-Extensión: 000
-Celular: (442) 176-4816
-Extensión de Segundo Contacto: 000
-Especifique en que momento o al hacer que aparece el error: nada
-Sector/Modulo/Piso: Blvd Bernardo Quintana Arrioja entre Pro
-Departamento: IT MANAGER II
-Entidad: Corporativo
-Expediente: 340118
-Segundo Contacto: Franco 
-Último Acceso Exitoso: Un Día
-Teléfono: 00
-Describa de manera clara la Solicitud o Falla que está reportando.: Expediente: c072106
-Celular y/o extensión: 795012
-2do contacto (nombre / extensión y/o celular): Francisca
-Correo: olobaton@santander.com.mx
-CC: 004
-Región: Centro
-UPN: C072106@santander.com.mx
-usuario N: n340118
-IP: 180.97.59.88
-Hostname: SMEUTMXC072106P
-Tipo usuario (sucursal. Corporativo., Contac Center): Corporativo
-Descripción del incidente: Falla VPN
-Pantalla de error: No conecta  erros 00023
 
-Para VPN	 
-Carrier: Megacable
-IP del Carrier: 192.168.23.44
+/**Generic BEGIN**/
+&Expediente: C072106
+&ext_contacto:795012
+&cel_contacto:(442) 176-4816
+&nombre2_contacto: Francisca Torres
+&cel2_contacto: (442) 176-4816
+&Correo: olobaton@santander.com.mx
+&Puesto: IT MANAGER II
+&CC: 0003
+&Region:  Centro 
+&UPN: C072106@santander.com.mx
+&usuario_N:n340118
+&IP: 180.97.59.88
+&Hostname:  SMEUTMXC072106P
+&Tipo_usuario: Corporativo
+&Descripcion_incidente: Falla de VPN, Conexión.
+&Numero_afectados: 2-8
+Pantalla_error (se anexa hasta que lo indique Supervisor o Bandejas)
+Para VPN           
+&Carrier: Megacable
+&IP del Carrier:192.168.23.44
+/**Generic END**/
+
+
 ","2025-07-28 12:15:39 - JANET IRIDIAN VELAZQUEZ SANCHEZ (Notas de trabajo)
 Nota de trabajo copiado del incidente principal: Pendiente, Se están realizando pruebas
 
@@ -139,21 +215,30 @@ Incident INC057036221 Parent Incident field added.
 ","GERARDO IBARRA BAEZ",,,INC057036221,0,"2025-07-28 12:15:38",Z917373@santander.com.mx,NULL,NULL,NULL,NULL,NULL,"En Espera",NULL,NULL,"SIN INHIBIDOR",NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"En Metrica",Corporativo,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"SNGlobal Incidentes","2025-07-28 16:02:38"
 INC057038280,"2025-07-28 13:10:44","0000-00-00 00:00:00","0000-00-00 00:00:00",,TMX_EU_Resolutores_SDK_Zona_1,"GERARDO IBARRA BAEZ","En Espera","Software Usuario Final",Software,"Falla Navegador",,"Reportes de Navegadores (Microsoft Edge, Google Chrome)",0,3910,"SUC. MODULO CORPORATIVO QUERETARO (3910)","LIDIA BLAS HERNANDEZ",Z917373@santander.com.mx,0,0,"Santander México","Variables:
 
-Tipo de Falla: No carga la Pagina
-IP del Equipo: 180.51.152.67
-Correo Electrónico: lblas@santander.com.mx
-Extensión: 79512
-Celular: 79512
-Extensión de Segundo Contacto: 79512
-Especifique en que momento o al hacer que aparece el error: Prueba
-Sector/Modulo/Piso: Blvd Bernardo Quintana Arrioja entre Pro
-Departamento: IT MANAGER II
-Entidad: Sucursal
-Expediente: 263958
-Segundo Contacto: Yadira Garcia 
-Último Acceso Exitoso: Un Día
-Teléfono: 79512
-Describa de manera clara la Solicitud o Falla que está reportando.: FOLIO DE PRUEBA
+/**Generic BEGIN**/
+&Expediente: c443497
+&ext_contacto:79512
+&cel_contacto:(442) 176-4816
+&nombre2_contacto: yadi Garcia
+&cel2_contacto: (442) 176-4816
+&Correo: lblas@santander.com.mx
+&Puesto: IT MANAGER II
+&CC: 0003
+&Region:  Centro 
+&UPN: c443497@santander.com.mx
+&usuario_N:     N263958
+&IP: 180.51. 152. 67
+&Hostname:  SMTILEAC443497P
+&Tipo_usuario: Corporativo
+&Descripcion_incidente: Falla de VPN, Falla prueba.
+&Numero_afectados: 4
+Pantalla_error (se anexa hasta que lo indique Supervisor o Bandejas)
+Para VPN           
+&Carrier: No Proporcionado
+&IP del Carrier: No Proporcionado
+/**Generic END**/
+
+
 ","2025-07-28 13:28:21 - ALMA ROSA GOMEZ OTILIO (Notas de trabajo)
 Incident INC057036221 Parent Incident field added.
 
@@ -163,20 +248,28 @@ Folio prueba
 Favor de asignarlo Folio padre INC057036221
 
 2025-07-28 13:21:21 - LIDIA BLAS HERNANDEZ (Observaciones adicionales)
-Expediente: c443497
-Celular y/o extensión: 79512
-2do contacto (nombre / extensión y/o celular): yadi Garcia
- Ext:  79512
-Correo:lblas@santander.com.mx
-CC: 3910
-Región: Centro
-UPN: c443497@santander.com.mx
-usuario N: N263958
-IP: 180.51.152.67
-Hostname: SMTILEAC443497P
-Tipo usuario (sucursal. Corporativo., Contac Center): Corporativo
-Descripción del incidente : Falla prueba
-Pantalla de error: No conecta
+E/**Generic BEGIN**/
+&Expediente: Expediente
+&ext_contacto:ext_contacto
+&cel_contacto:cel_contacto
+&nombre2_contacto: yadi Garcia
+&cel2_contacto: (442) 176-4816
+&Correo:Correo
+&Puesto:Puesto
+&CC: CCC
+&Region:  Centro 
+&UPN:upn
+&usuario_N:user n
+&IP: IP
+&Hostname:Hostname
+&Tipo_usuario: Tipo_usuario
+&Descripcion_incidente: Descripcion_incidente
+&Numero_afectados: 4
+Pantalla_error (se anexa hasta que lo indique Supervisor o Bandejas)
+Para VPN           
+&Carrier: No Proporcionado
+&IP del Carrier: No Proporcionado
+/**Generic END**/
 
 2025-07-28 13:14:04 - LIDIA BLAS HERNANDEZ (Observaciones adicionales)
 Folio prueba 
