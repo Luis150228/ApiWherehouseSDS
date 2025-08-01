@@ -7,7 +7,7 @@ BEGIN
     DECLARE v_texto LONGTEXT;
     DECLARE v_bloque LONGTEXT;
 
-    -- Cursor: folios genéricos pendientes
+    -- Cursor de folios genéricos pendientes
     DECLARE cur CURSOR FOR
         SELECT r.folio,
                CASE
@@ -45,7 +45,8 @@ BEGIN
         Descripcion_incidente VARCHAR(500),
         Numero_afectados VARCHAR(50),
         Carrier VARCHAR(100),
-        `IP del Carrier` VARCHAR(100)
+        `IP del Carrier` VARCHAR(100),
+        tiene_plantilla VARCHAR(2) -- SI / NO
     );
 
     OPEN cur;
@@ -56,59 +57,67 @@ BEGIN
             LEAVE read_loop;
         END IF;
 
-        -- Buscar bloque de plantilla
+        -- Buscar bloque
         IF v_texto IS NOT NULL THEN
             SET v_bloque = REGEXP_SUBSTR(v_texto, '/\\*\\*Generic BEGIN\\*\\*/([\\s\\S]*?)/\\*\\*Generic END\\*\\*/');
         ELSE
             SET v_bloque = NULL;
         END IF;
 
-        -- Si tiene plantilla, extraer datos
+        -- Si tiene plantilla
         IF v_bloque IS NOT NULL THEN
+            -- Limpiar bloque
             SET v_bloque = REPLACE(v_bloque, '/**Generic BEGIN**/', '');
             SET v_bloque = REPLACE(v_bloque, '/**Generic END**/', '');
-            SET v_bloque = UPPER(TRIM(REGEXP_REPLACE(v_bloque, '[[:space:]]+', ' ')));
+            SET v_bloque = REGEXP_REPLACE(v_bloque, '[[:space:]]+', ' ');
+
+            -- Función auxiliar inline para extraer valores
+            SET @expediente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&EXPEDIENTE:[^&\n]+'))),''),'SIN DATOS');
+            SET @ext_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&EXT_CONTACTO:[^&\n]+'))),''),'SIN DATOS');
+            SET @cel_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CEL_CONTACTO:[^&\n]+'))),''),'SIN DATOS');
+            SET @nombre2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&NOMBRE2_CONTACTO:[^&\n]+'))),''),'SIN DATOS');
+            SET @cel2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CEL2_CONTACTO:[^&\n]+'))),''),'SIN DATOS');
+            SET @correo = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'))),''),'SIN DATOS');
+            SET @puesto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&PUESTO:[^&\n]+'))),''),'SIN DATOS');
+            SET @cc = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CC:[^&\n]+'))),''),'SIN DATOS');
+            SET @region = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&REGION:[^&\n]+'))),''),'SIN DATOS');
+            SET @upn = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&UPN:[^&\n]+'))),''),'SIN DATOS');
+            SET @usuario_n = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&USUARIO_N:[^&\n]+'))),''),'SIN DATOS');
+            SET @ip = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&IP:[^&\n]+'))),' ',''),''),'SIN DATOS');
+            SET @hostname = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:[^&\n]+'))),''),'SIN DATOS');
+            SET @tipo_usuario = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&TIPO_USUARIO:[^&\n]+'))),''),'SIN DATOS');
+            SET @descripcion_incidente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&DESCRIPCION_INCIDENTE:[^&\n]+'))),''),'SIN DATOS');
+            SET @numero_afectados = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[^&\n]+'))),''),'SIN DATOS');
+            SET @carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CARRIER:[^&\n]+'))),''),'SIN DATOS');
+            SET @ip_carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'))),' ',''),''),'SIN DATOS');
 
             INSERT INTO tmp_tabla_genericos
-            SELECT
+            VALUES (
                 v_folio,
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&EXPEDIENTE:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&EXT_CONTACTO:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CEL_CONTACTO:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&NOMBRE2_CONTACTO:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CEL2_CONTACTO:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CORREO:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&PUESTO:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CC:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&REGION:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&UPN:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&USUARIO_N:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(REPLACE(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&IP:', -1), '\n', 1)), ' ', ''), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&HOSTNAME:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&TIPO_USUARIO:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&DESCRIPCION_INCIDENTE:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&NUMERO_AFECTADOS:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&CARRIER:', -1), '\n', 1)), ''), 'SIN DATOS'),
-                IFNULL(NULLIF(REPLACE(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(v_bloque, '&IP DEL CARRIER:', -1), '\n', 1)), ' ', ''), ''), 'SIN DATOS');
+                @expediente, @ext_contacto, @cel_contacto, @nombre2_contacto, @cel2_contacto,
+                @correo, @puesto, @cc, @region, @upn, @usuario_n,
+                @ip, @hostname, @tipo_usuario, @descripcion_incidente, @numero_afectados,
+                @carrier, @ip_carrier, 'SI'
+            );
+
         ELSE
-            -- Si NO tiene plantilla, registrar con SIN DATOS
-            INSERT INTO tmp_tabla_genericos (folio, Expediente, ext_contacto, cel_contacto, nombre2_contacto,
-                                             cel2_contacto, Correo, Puesto, CC, Region, UPN, usuario_N,
-                                             IP, Hostname, Tipo_usuario, Descripcion_incidente, Numero_afectados,
-                                             Carrier, `IP del Carrier`)
-            VALUES (v_folio, 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                    'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                    'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                    'SIN DATOS', 'SIN DATOS');
+            -- Sin plantilla: llenar con SIN DATOS
+            INSERT INTO tmp_tabla_genericos
+            VALUES (
+                v_folio,
+                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                'SIN DATOS', 'SIN DATOS', 'NO'
+            );
         END IF;
 
     END LOOP;
 
     CLOSE cur;
 
-    -- Resultado final: Incluye folios con y sin plantilla
+    -- Mostrar resultados
     SELECT * FROM tmp_tabla_genericos;
 
 END$$
-
 DELIMITER ;
