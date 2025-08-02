@@ -1,11 +1,6 @@
-ahora quiero no solo buscar los genericos de un solo folio, si no todos los genericos de la tabla servicenow_reportes con el query de ejemplo, validar que traigan las plantillas en caso de que no de todos modos traer los registros que cumplan los parametros y poner en cada apartado, 'SIN DATOS', ya que a posterior se validaran esos datos
-SELECT * FROM eut_reportesbk.servicenow_reportes r where (incidencia_principal != '' or incidencia_secundarias >= 1) and abierto >= '2025-07-01 00:00:00';
-
 DELIMITER $$
 
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets`(
-    IN var_folio VARCHAR(20)
-)
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all`()
 BEGIN
     DECLARE done INT DEFAULT FALSE;
     DECLARE v_folio VARCHAR(20);
@@ -20,8 +15,8 @@ BEGIN
                    ELSE NULL
                END AS texto
         FROM eut_reportesbk.servicenow_reportes r
-        WHERE r.incidencia_principal = var_folio
-           OR (r.folio = var_folio AND r.incidencia_secundarias >= 1);
+        WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
+          AND r.abierto >= '2025-07-01 00:00:00';
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
@@ -68,7 +63,7 @@ BEGIN
             SET v_bloque = REPLACE(v_bloque, '/**Generic END**/', '');
             SET v_bloque = REGEXP_REPLACE(v_bloque, '[[:space:]]+', ' ');
 
-            -- Función auxiliar: Extraer solo valor (quitar &CAMPO:)
+            -- Extracción de campos
             SET @Expediente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&EXPEDIENTE:[^&\n]+'), '&EXPEDIENTE:', ''))),''),'SIN DATOS');
             SET @ext_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&EXT_CONTACTO:[^&\n]+'), '&EXT_CONTACTO:', ''))),''),'SIN DATOS');
             SET @cel_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CEL_CONTACTO:[^&\n]+'), '&CEL_CONTACTO:', ''))),''),'SIN DATOS');
@@ -84,7 +79,17 @@ BEGIN
             SET @Hostname = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:[^&\n]+'), '&HOSTNAME:', ''))),''),'SIN DATOS');
             SET @Tipo_usuario = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&TIPO_USUARIO:[^&\n]+'), '&TIPO_USUARIO:', ''))),''),'SIN DATOS');
             SET @Descripcion_incidente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&DESCRIPCION_INCIDENTE:[^&\n]+'), '&DESCRIPCION_INCIDENTE:', ''))),''),'SIN DATOS');
-            SET @Numero_afectados = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[[:space:]][0-9\\-]+'), '&NUMERO_AFECTADOS:', ''))),''),'SIN DATOS');
+
+            -- Numero_afectados: solo números y guiones, espacios opcionales
+            SET @Numero_afectados = IFNULL(NULLIF(
+                UPPER(TRIM(
+                    REGEXP_REPLACE(
+                        REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'),
+                        '&NUMERO_AFECTADOS:[[:space:]]*', ''
+                    )
+                ))
+            ,''),'SIN DATOS');
+
             SET @Carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CARRIER:[^&\n]+'), '&CARRIER:', ''))),''),'SIN DATOS');
             SET @IP_Carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS');
 
@@ -98,7 +103,7 @@ BEGIN
                 @Carrier, @IP_Carrier
             );
         ELSE
-            -- Sin plantilla
+            -- Sin plantilla: registrar folio con SIN DATOS
             INSERT INTO tmp_tabla_plantillas
             VALUES (
                 v_folio,
