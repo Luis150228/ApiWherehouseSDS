@@ -65,25 +65,25 @@ BEGIN
             SET v_bloque = REPLACE(v_bloque, '/**Generic END**/', '');
             SET v_bloque = REGEXP_REPLACE(v_bloque, '[[:space:]]+', ' ');
 
-            -- Extraer valores individuales
-            SET @Expediente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&EXPEDIENTE:([^&\n]+)'))),''),'SIN DATOS');
-            SET @ext_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&EXT_CONTACTO:([^&\n]+)'))),''),'SIN DATOS');
-            SET @cel_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CEL_CONTACTO:([^&\n]+)'))),''),'SIN DATOS');
-            SET @nombre2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&NOMBRE2_CONTACTO:([^&\n]+)'))),''),'SIN DATOS');
-            SET @cel2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CEL2_CONTACTO:([^&\n]+)'))),''),'SIN DATOS');
-            SET @Correo = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CORREO:([^&\n]+)'))),''),'SIN DATOS');
-            SET @Puesto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&PUESTO:([^&\n]+)'))),''),'SIN DATOS');
-            SET @CC = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CC:([^&\n]+)'))),''),'SIN DATOS');
-            SET @Region = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&REGION:([^&\n]+)'))),''),'SIN DATOS');
-            SET @UPN = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&UPN:([^&\n]+)'))),''),'SIN DATOS');
-            SET @usuario_N = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&USUARIO_N:([^&\n]+)'))),''),'SIN DATOS');
-            SET @IP = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&IP:([^&\n]+)'))),' ',''),''),'SIN DATOS');
-            SET @Hostname = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:([^&\n]+)'))),''),'SIN DATOS');
-            SET @Tipo_usuario = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&TIPO_USUARIO:([^&\n]+)'))),''),'SIN DATOS');
-            SET @Descripcion_incidente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&DESCRIPCION_INCIDENTE:([^&\n]+)'))),''),'SIN DATOS');
-            SET @Numero_afectados = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:([^&\n]+)'))),''),'SIN DATOS');
-            SET @Carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CARRIER:([^&\n]+)'))),''),'SIN DATOS');
-            SET @IP_Carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:([^&\n]+)'))),' ',''),''),'SIN DATOS');
+            -- Función auxiliar: Extraer solo valor (quitar &CAMPO:)
+            SET @Expediente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&EXPEDIENTE:[^&\n]+'), '&EXPEDIENTE:', ''))),''),'SIN DATOS');
+            SET @ext_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&EXT_CONTACTO:[^&\n]+'), '&EXT_CONTACTO:', ''))),''),'SIN DATOS');
+            SET @cel_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CEL_CONTACTO:[^&\n]+'), '&CEL_CONTACTO:', ''))),''),'SIN DATOS');
+            SET @nombre2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&NOMBRE2_CONTACTO:[^&\n]+'), '&NOMBRE2_CONTACTO:', ''))),''),'SIN DATOS');
+            SET @cel2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CEL2_CONTACTO:[^&\n]+'), '&CEL2_CONTACTO:', ''))),''),'SIN DATOS');
+            SET @Correo = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', ''))),''),'SIN DATOS');
+            SET @Puesto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&PUESTO:[^&\n]+'), '&PUESTO:', ''))),''),'SIN DATOS');
+            SET @CC = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CC:[^&\n]+'), '&CC:', ''))),''),'SIN DATOS');
+            SET @Region = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&REGION:[^&\n]+'), '&REGION:', ''))),''),'SIN DATOS');
+            SET @UPN = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&UPN:[^&\n]+'), '&UPN:', ''))),''),'SIN DATOS');
+            SET @usuario_N = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&USUARIO_N:[^&\n]+'), '&USUARIO_N:', ''))),''),'SIN DATOS');
+            SET @IP = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''),'SIN DATOS');
+            SET @Hostname = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:[^&\n]+'), '&HOSTNAME:', ''))),''),'SIN DATOS');
+            SET @Tipo_usuario = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&TIPO_USUARIO:[^&\n]+'), '&TIPO_USUARIO:', ''))),''),'SIN DATOS');
+            SET @Descripcion_incidente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&DESCRIPCION_INCIDENTE:[^&\n]+'), '&DESCRIPCION_INCIDENTE:', ''))),''),'SIN DATOS');
+            SET @Numero_afectados = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[^&\n]+'), '&NUMERO_AFECTADOS:', ''))),''),'SIN DATOS');
+            SET @Carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CARRIER:[^&\n]+'), '&CARRIER:', ''))),''),'SIN DATOS');
+            SET @IP_Carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS');
 
             -- Insertar fila tabulada
             INSERT INTO tmp_tabla_plantillas
