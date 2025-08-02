@@ -1,5 +1,5 @@
-vamos muy bien el unico detalle es que en numero_afectados se esta trallendo data de lo que siguio del salto de linea en especifico ese campo seran datos cortos ejemplos : 6, 1-9, 205, etc por lo que hay que depurarlo
-
+ahora quiero no solo buscar los genericos de un solo folio, si no todos los genericos de la tabla servicenow_reportes con el query de ejemplo, validar que traigan las plantillas en caso de que no de todos modos traer los registros que cumplan los parametros y poner en cada apartado, 'SIN DATOS', ya que a posterior se validaran esos datos
+SELECT * FROM eut_reportesbk.servicenow_reportes r where (incidencia_principal != '' or incidencia_secundarias >= 1) and abierto >= '2025-07-01 00:00:00';
 
 DELIMITER $$
 
@@ -84,7 +84,7 @@ BEGIN
             SET @Hostname = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:[^&\n]+'), '&HOSTNAME:', ''))),''),'SIN DATOS');
             SET @Tipo_usuario = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&TIPO_USUARIO:[^&\n]+'), '&TIPO_USUARIO:', ''))),''),'SIN DATOS');
             SET @Descripcion_incidente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&DESCRIPCION_INCIDENTE:[^&\n]+'), '&DESCRIPCION_INCIDENTE:', ''))),''),'SIN DATOS');
-            SET @Numero_afectados = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[^&\n]+'), '&NUMERO_AFECTADOS:', ''))),''),'SIN DATOS');
+            SET @Numero_afectados = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[[:space:]][0-9\\-]+'), '&NUMERO_AFECTADOS:', ''))),''),'SIN DATOS');
             SET @Carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CARRIER:[^&\n]+'), '&CARRIER:', ''))),''),'SIN DATOS');
             SET @IP_Carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS');
 
