@@ -1,13 +1,14 @@
 DELIMITER $$
 
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_tabular_plantillas_generico_pendientes`()
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_tabular_plantillas_generico`(
+    IN var_folio VARCHAR(20)
+)
 BEGIN
     DECLARE done INT DEFAULT FALSE;
     DECLARE v_folio VARCHAR(20);
     DECLARE v_texto LONGTEXT;
     DECLARE v_bloque LONGTEXT;
 
-    -- Cursor de folios genéricos pendientes
     DECLARE cur CURSOR FOR
         SELECT r.folio,
                CASE
@@ -16,17 +17,13 @@ BEGIN
                    ELSE NULL
                END AS texto
         FROM eut_reportesbk.servicenow_reportes r
-        WHERE 
-            r.incidencia_principal IS NOT NULL
-            AND r.incidencia_principal <> ''
-            AND r.incidencia_secundarias > 0
-            AND (r.resuelto = '0000-00-00 00:00:00' OR r.resuelto IS NULL);
+        WHERE r.incidencia_principal = var_folio
+           OR (r.folio = var_folio AND r.incidencia_secundarias >= 1);
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
-    -- Tabla temporal para resultados
-    DROP TEMPORARY TABLE IF EXISTS tmp_tabla_genericos;
-    CREATE TEMPORARY TABLE tmp_tabla_genericos (
+    DROP TEMPORARY TABLE IF EXISTS tmp_tabla_plantillas;
+    CREATE TEMPORARY TABLE tmp_tabla_plantillas (
         folio VARCHAR(20),
         Expediente VARCHAR(150),
         ext_contacto VARCHAR(100),
@@ -45,8 +42,7 @@ BEGIN
         Descripcion_incidente VARCHAR(500),
         Numero_afectados VARCHAR(50),
         Carrier VARCHAR(100),
-        `IP del Carrier` VARCHAR(100),
-        tiene_plantilla VARCHAR(2) -- SI / NO
+        `IP del Carrier` VARCHAR(100)
     );
 
     OPEN cur;
@@ -57,58 +53,56 @@ BEGIN
             LEAVE read_loop;
         END IF;
 
-        -- Buscar bloque
+        -- Extraer bloque entre BEGIN y END
         IF v_texto IS NOT NULL THEN
             SET v_bloque = REGEXP_SUBSTR(v_texto, '/\\*\\*Generic BEGIN\\*\\*/([\\s\\S]*?)/\\*\\*Generic END\\*\\*/');
         ELSE
             SET v_bloque = NULL;
         END IF;
 
-        -- Si tiene plantilla
         IF v_bloque IS NOT NULL THEN
-            -- Limpiar bloque
             SET v_bloque = REPLACE(v_bloque, '/**Generic BEGIN**/', '');
             SET v_bloque = REPLACE(v_bloque, '/**Generic END**/', '');
             SET v_bloque = REGEXP_REPLACE(v_bloque, '[[:space:]]+', ' ');
 
-            -- Función auxiliar inline para extraer valores
-            SET @expediente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&EXPEDIENTE:[^&\n]+'))),''),'SIN DATOS');
-            SET @ext_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&EXT_CONTACTO:[^&\n]+'))),''),'SIN DATOS');
-            SET @cel_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CEL_CONTACTO:[^&\n]+'))),''),'SIN DATOS');
-            SET @nombre2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&NOMBRE2_CONTACTO:[^&\n]+'))),''),'SIN DATOS');
-            SET @cel2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CEL2_CONTACTO:[^&\n]+'))),''),'SIN DATOS');
-            SET @correo = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'))),''),'SIN DATOS');
-            SET @puesto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&PUESTO:[^&\n]+'))),''),'SIN DATOS');
-            SET @cc = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CC:[^&\n]+'))),''),'SIN DATOS');
-            SET @region = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&REGION:[^&\n]+'))),''),'SIN DATOS');
-            SET @upn = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&UPN:[^&\n]+'))),''),'SIN DATOS');
-            SET @usuario_n = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&USUARIO_N:[^&\n]+'))),''),'SIN DATOS');
-            SET @ip = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&IP:[^&\n]+'))),' ',''),''),'SIN DATOS');
-            SET @hostname = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:[^&\n]+'))),''),'SIN DATOS');
-            SET @tipo_usuario = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&TIPO_USUARIO:[^&\n]+'))),''),'SIN DATOS');
-            SET @descripcion_incidente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&DESCRIPCION_INCIDENTE:[^&\n]+'))),''),'SIN DATOS');
-            SET @numero_afectados = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[^&\n]+'))),''),'SIN DATOS');
-            SET @carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CARRIER:[^&\n]+'))),''),'SIN DATOS');
-            SET @ip_carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'))),' ',''),''),'SIN DATOS');
+            -- Extraer valores individuales
+            SET @Expediente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&EXPEDIENTE:([^&\n]+)'))),''),'SIN DATOS');
+            SET @ext_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&EXT_CONTACTO:([^&\n]+)'))),''),'SIN DATOS');
+            SET @cel_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CEL_CONTACTO:([^&\n]+)'))),''),'SIN DATOS');
+            SET @nombre2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&NOMBRE2_CONTACTO:([^&\n]+)'))),''),'SIN DATOS');
+            SET @cel2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CEL2_CONTACTO:([^&\n]+)'))),''),'SIN DATOS');
+            SET @Correo = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CORREO:([^&\n]+)'))),''),'SIN DATOS');
+            SET @Puesto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&PUESTO:([^&\n]+)'))),''),'SIN DATOS');
+            SET @CC = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CC:([^&\n]+)'))),''),'SIN DATOS');
+            SET @Region = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&REGION:([^&\n]+)'))),''),'SIN DATOS');
+            SET @UPN = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&UPN:([^&\n]+)'))),''),'SIN DATOS');
+            SET @usuario_N = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&USUARIO_N:([^&\n]+)'))),''),'SIN DATOS');
+            SET @IP = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&IP:([^&\n]+)'))),' ',''),''),'SIN DATOS');
+            SET @Hostname = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:([^&\n]+)'))),''),'SIN DATOS');
+            SET @Tipo_usuario = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&TIPO_USUARIO:([^&\n]+)'))),''),'SIN DATOS');
+            SET @Descripcion_incidente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&DESCRIPCION_INCIDENTE:([^&\n]+)'))),''),'SIN DATOS');
+            SET @Numero_afectados = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:([^&\n]+)'))),''),'SIN DATOS');
+            SET @Carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&CARRIER:([^&\n]+)'))),''),'SIN DATOS');
+            SET @IP_Carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:([^&\n]+)'))),' ',''),''),'SIN DATOS');
 
-            INSERT INTO tmp_tabla_genericos
+            -- Insertar fila tabulada
+            INSERT INTO tmp_tabla_plantillas
             VALUES (
                 v_folio,
-                @expediente, @ext_contacto, @cel_contacto, @nombre2_contacto, @cel2_contacto,
-                @correo, @puesto, @cc, @region, @upn, @usuario_n,
-                @ip, @hostname, @tipo_usuario, @descripcion_incidente, @numero_afectados,
-                @carrier, @ip_carrier, 'SI'
+                @Expediente, @ext_contacto, @cel_contacto, @nombre2_contacto, @cel2_contacto,
+                @Correo, @Puesto, @CC, @Region, @UPN, @usuario_N,
+                @IP, @Hostname, @Tipo_usuario, @Descripcion_incidente, @Numero_afectados,
+                @Carrier, @IP_Carrier
             );
-
         ELSE
-            -- Sin plantilla: llenar con SIN DATOS
-            INSERT INTO tmp_tabla_genericos
+            -- Sin plantilla
+            INSERT INTO tmp_tabla_plantillas
             VALUES (
                 v_folio,
                 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
                 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
                 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                'SIN DATOS', 'SIN DATOS', 'NO'
+                'SIN DATOS', 'SIN DATOS'
             );
         END IF;
 
@@ -116,8 +110,7 @@ BEGIN
 
     CLOSE cur;
 
-    -- Mostrar resultados
-    SELECT * FROM tmp_tabla_genericos;
-
+    SELECT * FROM tmp_tabla_plantillas;
 END$$
+
 DELIMITER ;
