@@ -106,3 +106,34 @@ BEGIN
             ,''),'SIN DATOS');
 
             SET @Carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CARRIER:[^&\n]+'), '&CARRIER:', ''))),''),'SIN DATOS');
+            SET @IP_Carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS');
+
+            -- Insertar fila tabulada
+            INSERT INTO tmp_tabla_plantillas
+            VALUES (
+                v_folio, v_incidencia_padre,
+                @Expediente, @ext_contacto, @cel_contacto, @nombre2_contacto, @cel2_contacto,
+                @Correo, @Puesto, @CC, @Region, @UPN, @usuario_N,
+                @IP, @Hostname, @Tipo_usuario, @Descripcion_incidente, @Numero_afectados,
+                @Carrier, @IP_Carrier
+            );
+        ELSE
+            -- Sin plantilla
+            INSERT INTO tmp_tabla_plantillas
+            VALUES (
+                v_folio, v_incidencia_padre,
+                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                'SIN DATOS', 'SIN DATOS'
+            );
+        END IF;
+
+    END LOOP;
+
+    CLOSE cur;
+
+    SELECT * FROM tmp_tabla_plantillas;
+END$$
+
+DELIMITER ;
