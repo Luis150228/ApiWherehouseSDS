@@ -6,9 +6,14 @@ BEGIN
     DECLARE v_folio VARCHAR(20);
     DECLARE v_texto LONGTEXT;
     DECLARE v_bloque LONGTEXT;
+    DECLARE v_incidencia_principal VARCHAR(45);
+    DECLARE v_incidencia_secundarias INT;
+    DECLARE v_incidencia_padre VARCHAR(20);
 
     DECLARE cur CURSOR FOR
         SELECT r.folio,
+               r.incidencia_principal,
+               r.incidencia_secundarias,
                CASE
                    WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
                    WHEN r.obs_notasresolucion LIKE '%/**Generic BEGIN**/%' THEN r.obs_notasresolucion
@@ -23,6 +28,7 @@ BEGIN
     DROP TEMPORARY TABLE IF EXISTS tmp_tabla_plantillas;
     CREATE TEMPORARY TABLE tmp_tabla_plantillas (
         folio VARCHAR(20),
+        incidencia_padre VARCHAR(20),
         expediente VARCHAR(150),
         ext_contacto VARCHAR(100),
         cel_contacto VARCHAR(100),
@@ -46,9 +52,18 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_folio, v_texto;
+        FETCH cur INTO v_folio, v_incidencia_principal, v_incidencia_secundarias, v_texto;
         IF done THEN
             LEAVE read_loop;
+        END IF;
+
+        -- Determinar incidencia_padre
+        IF v_incidencia_secundarias >= 1 THEN
+            SET v_incidencia_padre = v_folio;
+        ELSEIF v_incidencia_principal IS NOT NULL AND v_incidencia_principal != '' THEN
+            SET v_incidencia_padre = v_incidencia_principal;
+        ELSE
+            SET v_incidencia_padre = 'SIN DATOS';
         END IF;
 
         -- Extraer bloque entre BEGIN y END
@@ -91,34 +106,3 @@ BEGIN
             ,''),'SIN DATOS');
 
             SET @Carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CARRIER:[^&\n]+'), '&CARRIER:', ''))),''),'SIN DATOS');
-            SET @IP_Carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS');
-
-            -- Insertar fila tabulada
-            INSERT INTO tmp_tabla_plantillas
-            VALUES (
-                v_folio,
-                @Expediente, @ext_contacto, @cel_contacto, @nombre2_contacto, @cel2_contacto,
-                @Correo, @Puesto, @CC, @Region, @UPN, @usuario_N,
-                @IP, @Hostname, @Tipo_usuario, @Descripcion_incidente, @Numero_afectados,
-                @Carrier, @IP_Carrier
-            );
-        ELSE
-            -- Sin plantilla: registrar folio con SIN DATOS
-            INSERT INTO tmp_tabla_plantillas
-            VALUES (
-                v_folio,
-                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                'SIN DATOS', 'SIN DATOS'
-            );
-        END IF;
-
-    END LOOP;
-
-    CLOSE cur;
-
-    SELECT * FROM tmp_tabla_plantillas;
-END$$
-
-DELIMITER ;
