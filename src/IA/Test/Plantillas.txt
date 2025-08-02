@@ -1,6 +1,9 @@
+vamos muy bien el unico detalle es que en numero_afectados se esta trallendo data de lo que siguio del salto de linea en especifico ese campo seran datos cortos ejemplos : 6, 1-9, 205, etc por lo que hay que depurarlo
+
+
 DELIMITER $$
 
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_tabular_plantillas_generico`(
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets`(
     IN var_folio VARCHAR(20)
 )
 BEGIN
@@ -25,24 +28,24 @@ BEGIN
     DROP TEMPORARY TABLE IF EXISTS tmp_tabla_plantillas;
     CREATE TEMPORARY TABLE tmp_tabla_plantillas (
         folio VARCHAR(20),
-        Expediente VARCHAR(150),
+        expediente VARCHAR(150),
         ext_contacto VARCHAR(100),
         cel_contacto VARCHAR(100),
         nombre2_contacto VARCHAR(200),
         cel2_contacto VARCHAR(100),
-        Correo VARCHAR(200),
-        Puesto VARCHAR(200),
+        mail VARCHAR(200),
+        puesto VARCHAR(200),
         CC VARCHAR(50),
-        Region VARCHAR(100),
+        region VARCHAR(100),
         UPN VARCHAR(150),
-        usuario_N VARCHAR(100),
+        usuario_n VARCHAR(100),
         IP VARCHAR(100),
-        Hostname VARCHAR(150),
-        Tipo_usuario VARCHAR(100),
-        Descripcion_incidente VARCHAR(500),
-        Numero_afectados VARCHAR(50),
-        Carrier VARCHAR(100),
-        `IP del Carrier` VARCHAR(100)
+        hostname VARCHAR(150),
+        tipo_usuario VARCHAR(100),
+        descripcion_incidente VARCHAR(500),
+        numero_afectados VARCHAR(50),
+        carrier VARCHAR(100),
+        IP_carrier VARCHAR(100)
     );
 
     OPEN cur;
@@ -71,11 +74,11 @@ BEGIN
             SET @cel_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CEL_CONTACTO:[^&\n]+'), '&CEL_CONTACTO:', ''))),''),'SIN DATOS');
             SET @nombre2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&NOMBRE2_CONTACTO:[^&\n]+'), '&NOMBRE2_CONTACTO:', ''))),''),'SIN DATOS');
             SET @cel2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CEL2_CONTACTO:[^&\n]+'), '&CEL2_CONTACTO:', ''))),''),'SIN DATOS');
-            SET @Correo = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', ''))),''),'SIN DATOS');
+            SET @Correo = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', '')),''),'SIN DATOS');
             SET @Puesto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&PUESTO:[^&\n]+'), '&PUESTO:', ''))),''),'SIN DATOS');
             SET @CC = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CC:[^&\n]+'), '&CC:', ''))),''),'SIN DATOS');
             SET @Region = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&REGION:[^&\n]+'), '&REGION:', ''))),''),'SIN DATOS');
-            SET @UPN = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&UPN:[^&\n]+'), '&UPN:', ''))),''),'SIN DATOS');
+            SET @UPN = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&UPN:[^&\n]+'), '&UPN:', '')),''),'SIN DATOS');
             SET @usuario_N = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&USUARIO_N:[^&\n]+'), '&USUARIO_N:', ''))),''),'SIN DATOS');
             SET @IP = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''),'SIN DATOS');
             SET @Hostname = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:[^&\n]+'), '&HOSTNAME:', ''))),''),'SIN DATOS');
