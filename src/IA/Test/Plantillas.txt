@@ -1,4 +1,4 @@
-DELIMITER $$
+El siguiente procedimiento almacenado esta funcionando de forma correcta pero solo me regresa valores de la plantilla que pasaria si quisiera agregar valores de la tabla de servicenow_reportes por ejemplo abierto_por o ubicacion de esa tabla 
 
 CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all`()
 BEGIN
@@ -21,6 +21,7 @@ BEGIN
                END AS texto
         FROM eut_reportesbk.servicenow_reportes r
         WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
+			AND origen = 'SNGlobal Incidentes'
           AND r.abierto >= '2025-07-01 00:00:00';
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
@@ -134,6 +135,4 @@ BEGIN
     CLOSE cur;
 
     SELECT * FROM tmp_tabla_plantillas;
-END$$
-
-DELIMITER ;
+END
