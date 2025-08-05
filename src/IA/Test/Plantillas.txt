@@ -1,216 +1,55 @@
-en caso de que no haya alguna plantilla actualemente estamos haciendo lo siguiente en el store procedure stp_generic_tickets_all recuerda actual como experto en DB y MariaDB
-
-        ELSE
-            -- Sin plantilla
-            INSERT INTO tmp_tabla_plantillas
-            VALUES (
-                v_folio, v_incidencia_padre,
-                'SIN DATOS', v_abierto_por, v_nombreproyecto, 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                'SIN DATOS', 'SIN DATOS', v_origen
-            );
-        END IF;
-
-pero me gustaria que adecuemos el siguiente query para que si no hay plantilla para ese incidente ejecute lo siguiente, pero supongo debe ser para cada folio  recuerda actual como experto en DB y MariaDB
-
-SELECT * FROM (SELECT r.folio, if(incidencia_secundarias >=1, r.folio, r.incidencia_principal) as 'incidencia_padre', w.usuario as expediente, r.abierto_por,  r.nombreproyecto, 'SIN DATOS' as 'ext_contacto', IFNULL(l.num_movil, 'SIN DATOS') as 'cel_contacto', w.supervisor as 'nombre2_contacto', 'SIN DATOS' AS cel2_contacto, w.mail, w.puesto, right(w.cc_wd,4) as 'cc', REGEXP_REPLACE(w.region, '^Region[[:space:]]+', '') AS 'region', w.upn_wd as 'UPN',  w.n_user as 'usuario_n', IFNULL(c.ip_address, 'SIN DATOS') as 'IP', IFNULL(c.`name`, 'SIN DATOS') AS 'hostname', suc_corp as 'tipo_usuario', 'SIN DATOS' as descripcion_incidente, 'SIN DATOS' as numero_afectados, 'SIN DATOS' as carrier, 'SIN DATOS' as IP_carrier, r.origen FROM eut_reportesbk.servicenow_reportes r
-LEFT JOIN eut_toolmovil.eut_workday w on r.abierto_por = w.nombre_full
-LEFT JOIN eut_toolmovil.inventario_lineas l on w.usuario = l.expediente
-LEFT JOIN eut_reportesbk.eut_cmdb c on w.usuario = c.expediente
-WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1) AND r.origen = 'SNGlobal Incidentes' AND r.abierto >= '2025-07-01 00:00:00')g ;
-
-Estas son las tablas que usamos talvez necesiten alguna mejora para agilizar la consulta lo mejor posible recuerda actual como experto en DB y MariaDB
-CREATE TABLE `servicenow_reportes` (
-  `folio` varchar(20) NOT NULL,
-  `abierto` datetime DEFAULT NULL,
-  `resuelto` datetime DEFAULT NULL,
-  `cerrado` datetime DEFAULT NULL,
-  `creado_por` varchar(250) DEFAULT NULL,
-  `grup_asig` varchar(150) DEFAULT NULL,
-  `asig_a` varchar(150) DEFAULT NULL,
-  `estatus` varchar(20) DEFAULT NULL,
-  `categoria` varchar(150) DEFAULT NULL,
-  `subcategoria` varchar(150) DEFAULT NULL,
-  `subcategoria2` varchar(120) DEFAULT NULL,
-  `tipoproblema` varchar(120) DEFAULT NULL,
-  `nombreproyecto` varchar(150) DEFAULT NULL,
-  `sla` int DEFAULT NULL,
-  `ceco` int DEFAULT NULL,
-  `ubicacion` varchar(150) DEFAULT NULL,
-  `abierto_por` varchar(150) DEFAULT NULL,
-  `solicitante` varchar(150) DEFAULT NULL,
-  `duracion` int DEFAULT NULL,
-  `duracion_negocio` int DEFAULT NULL,
-  `empresa` varchar(150) DEFAULT NULL,
-  `descripcion` mediumtext,
-  `obs_notasresolucion` longtext,
-  `cerrado_por` varchar(150) DEFAULT NULL,
-  `resuelto_por` varchar(150) DEFAULT NULL,
-  `codigo_cierre` varchar(150) DEFAULT NULL,
-  `incidencia_principal` varchar(45) DEFAULT NULL,
-  `incidencia_secundarias` varchar(45) DEFAULT NULL,
-  `actualizado` datetime DEFAULT NULL,
-  `mail_creador` varchar(150) DEFAULT NULL,
-  `id_ext` varchar(50) DEFAULT NULL,
-  `clasificacion` varchar(50) DEFAULT NULL,
-  `aplicativo` varchar(50) DEFAULT NULL,
-  `plataforma` varchar(50) DEFAULT NULL,
-  `falla` varchar(50) DEFAULT NULL,
-  `solucion` varchar(50) DEFAULT NULL,
-  `causa_raiz` varchar(50) DEFAULT NULL,
-  `useralta` varchar(20) DEFAULT NULL,
-  `limitadores` varchar(25) DEFAULT NULL,
-  `tiempo` int DEFAULT NULL,
-  `estado` varchar(50) DEFAULT NULL,
-  `zona_ubica` varchar(50) DEFAULT NULL,
-  `zona_num` int DEFAULT NULL,
-  `region_cau` varchar(50) DEFAULT NULL,
-  `sla_tsucursales` int DEFAULT NULL,
-  `grupo_gral` varchar(50) DEFAULT NULL,
-  `grupo_local` varchar(50) DEFAULT NULL,
-  `medido` varchar(50) DEFAULT NULL,
-  `exc_user` varchar(7) DEFAULT NULL,
-  `exc_obs` tinytext,
-  `exc_clave` varchar(250) DEFAULT NULL,
-  `exc_region` varchar(145) DEFAULT NULL,
-  `exc_metrica` varchar(20) DEFAULT NULL,
-  `exc_status` varchar(150) DEFAULT 'En Metrica',
-  `suc_corp` varchar(50) DEFAULT NULL,
-  `sf_descrip_gral` varchar(150) DEFAULT NULL,
-  `sf_descrip_especif` tinytext,
-  `id_fespecif` int DEFAULT NULL,
-  `sf_descrip_type` varchar(50) DEFAULT NULL,
-  `sf_minutos` int DEFAULT NULL,
-  `semanal_rango` varchar(45) DEFAULT NULL,
-  `semanal_mes` varchar(10) DEFAULT NULL,
-  `tipos` varchar(45) DEFAULT NULL,
-  `origen` varchar(25) DEFAULT NULL,
-  `f_alta` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`folio`),
-  KEY `idx_abierto_por` (`abierto_por`),
-  KEY `idx_nombreproyecto` (`nombreproyecto`),
-  KEY `idx_categoria` (`categoria`),
-  KEY `idx_estatus` (`estatus`),
-  KEY `idx_principal_secundarias_resuelto` (`incidencia_principal`,`incidencia_secundarias`,`resuelto`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+ELSE
+    INSERT INTO tmp_tabla_plantillas
+    SELECT 
+        r.folio,
+        IF(r.incidencia_secundarias >= 1, r.folio, r.incidencia_principal) AS incidencia_padre,
+        IFNULL(w.usuario, 'SIN DATOS') AS expediente,
+        r.abierto_por,
+        r.nombreproyecto,
+        'SIN DATOS' AS ext_contacto,
+        IFNULL(l.num_movil, 'SIN DATOS') AS cel_contacto,
+        w.supervisor AS nombre2_contacto,
+        'SIN DATOS' AS cel2_contacto,
+        w.mail,
+        w.puesto,
+        RIGHT(w.cc_wd, 4) AS cc,
+        REGEXP_REPLACE(w.region, '^Region[[:space:]]+', '') AS region,
+        w.upn_wd AS UPN,
+        w.n_user AS usuario_n,
+        IFNULL(c.ip_address, 'SIN DATOS') AS IP,
+        IFNULL(c.name, 'SIN DATOS') AS hostname,
+        r.suc_corp AS tipo_usuario,
+        'SIN DATOS' AS descripcion_incidente,
+        'SIN DATOS' AS numero_afectados,
+        'SIN DATOS' AS carrier,
+        'SIN DATOS' AS IP_carrier,
+        r.origen
+    FROM eut_reportesbk.servicenow_reportes r
+    LEFT JOIN eut_toolmovil.eut_workday w 
+        ON r.abierto_por = w.nombre_full
+    LEFT JOIN eut_toolmovil.inventario_lineas l 
+        ON w.usuario = l.expediente
+    LEFT JOIN (
+        SELECT cm1.*
+        FROM eut_reportesbk.eut_cmdb cm1
+        INNER JOIN (
+            SELECT expediente, MAX(u_created_date) AS max_date
+            FROM eut_reportesbk.eut_cmdb
+            GROUP BY expediente
+        ) cm2 ON cm1.expediente = cm2.expediente 
+             AND cm1.u_created_date = cm2.max_date
+    ) c ON w.usuario = c.expediente
+    WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
+      AND r.origen = 'SNGlobal Incidentes'
+      AND r.abierto >= '2025-07-01 00:00:00';
+END IF;
 
 
-CREATE TABLE `inventario_lineas` (
-  `region` varchar(3) DEFAULT NULL,
-  `cta_padre` varchar(8) DEFAULT NULL,
-  `cta` varchar(8) DEFAULT NULL,
-  `ciclo` int DEFAULT NULL,
-  `razon_social` varchar(500) DEFAULT NULL,
-  `num_movil` varchar(10) NOT NULL,
-  `estatus_tel` varchar(45) DEFAULT NULL,
-  `motivo_tel` varchar(45) DEFAULT NULL,
-  `iccid` varchar(20) NOT NULL,
-  `imei` varchar(20) NOT NULL,
-  `estatus_cta` varchar(4) DEFAULT NULL,
-  `nombre_plan` varchar(45) NOT NULL,
-  `monto_plan` double(6,2) NOT NULL,
-  `marca` varchar(45) NOT NULL,
-  `modelo` varchar(150) NOT NULL,
-  `meses_plan` int NOT NULL,
-  `date_ini` date NOT NULL,
-  `date_fin` date NOT NULL,
-  `estatus_adeudum` varchar(45) DEFAULT NULL,
-  `mes_restante` int NOT NULL,
-  `dias_restantes` int DEFAULT NULL,
-  `asignado_a` varchar(500) DEFAULT NULL,
-  `expediente` varchar(7) DEFAULT NULL,
-  `email` varchar(150) DEFAULT NULL,
-  `area` varchar(250) DEFAULT NULL,
-  `puesto` varchar(150) DEFAULT NULL,
-  `supervisor` varchar(245) DEFAULT NULL,
-  `empresa_santander` longtext,
-  `ubicacion_wd` longtext,
-  `estatus_int` varchar(45) DEFAULT 'disponible',
-  `observacion_int` longtext,
-  `user_update` varchar(45) DEFAULT NULL,
-  `enrollment_key` varchar(145) DEFAULT NULL,
-  `Enrollment_model` varchar(45) DEFAULT NULL,
-  `Enrollment_so` varchar(250) DEFAULT NULL,
-  `Enrollment_version` double(6,2) DEFAULT NULL,
-  `Enrollment_date` datetime NOT NULL,
-  `update_file_Enrollment` datetime DEFAULT NULL,
-  `workday_date` datetime DEFAULT NULL,
-  `workday_status` varchar(245) DEFAULT NULL,
-  `workday_id` varchar(45) DEFAULT NULL,
-  `origen` varchar(45) DEFAULT NULL,
-  `update_file` datetime DEFAULT NULL,
-  `update_usr_data` datetime DEFAULT NULL,
-  `user_file_asig` varchar(45) DEFAULT NULL,
-  `update_asig` datetime DEFAULT NULL,
-  `estatus_telcelfile` varchar(45) DEFAULT NULL,
-  `date_telcelfile` datetime DEFAULT NULL,
-  PRIMARY KEY (`num_movil`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+CREATE INDEX idx_cmdb_expediente_fecha 
+ON eut_cmdb (expediente, u_created_date DESC);
 
-CREATE TABLE `eut_cmdb` (
-  `asset_tag` varchar(50) NOT NULL,
-  `u_type_ref` varchar(50) DEFAULT NULL,
-  `expediente` varchar(7) DEFAULT NULL,
-  `name` varchar(255) DEFAULT NULL,
-  `assigned_to` varchar(255) DEFAULT NULL,
-  `serial_number` varchar(100) DEFAULT NULL,
-  `u_status` varchar(100) DEFAULT NULL,
-  `u_status_reason` varchar(255) DEFAULT NULL,
-  `assignment_group` varchar(255) DEFAULT NULL,
-  `manufacturer` varchar(100) DEFAULT NULL,
-  `model_id` varchar(255) DEFAULT NULL,
-  `u_third_company` varchar(255) DEFAULT NULL,
-  `dns_domain` varchar(255) DEFAULT NULL,
-  `u_delivery` varchar(255) DEFAULT NULL,
-  `used_for` varchar(100) DEFAULT NULL,
-  `u_obsolescence_date_hw` date DEFAULT NULL,
-  `u_obsolescence_date_sw` date DEFAULT NULL,
-  `u_os_model_id` varchar(255) DEFAULT NULL,
-  `sys_class_name` varchar(100) DEFAULT NULL,
-  `sys_created_by` varchar(255) DEFAULT NULL,
-  `company` varchar(255) DEFAULT NULL,
-  `comments` longtext,
-  `u_category` varchar(100) DEFAULT NULL,
-  `managed_by` varchar(255) DEFAULT NULL,
-  `support_group` varchar(255) DEFAULT NULL,
-  `owned_by` varchar(255) DEFAULT NULL,
-  `location` varchar(255) DEFAULT NULL,
-  `u_created_date` datetime DEFAULT NULL,
-  `sys_updated_on` datetime DEFAULT NULL,
-  `sys_updated_by` varchar(255) DEFAULT NULL,
-  `mac_address` varchar(100) DEFAULT NULL,
-  `ip_address` varchar(100) DEFAULT NULL,
-  `u_adm_ip_address` varchar(100) DEFAULT NULL,
-  `fqdn` varchar(255) DEFAULT NULL,
-  `f_alta` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+CREATE INDEX idx_origen_fecha 
+ON servicenow_reportes (origen, abierto);
 
-CREATE TABLE `eut_workday` (
-  `usuario` varchar(8) NOT NULL,
-  `n_user` varchar(8) NOT NULL,
-  `nombre_full` varchar(150) NOT NULL,
-  `nombre` varchar(150) NOT NULL,
-  `apellidop` varchar(150) NOT NULL,
-  `apellidom` varchar(150) NOT NULL,
-  `mail` varchar(150) DEFAULT NULL,
-  `upn_wd` varchar(150) DEFAULT NULL,
-  `puesto` varchar(250) NOT NULL,
-  `cc_wd` varchar(250) NOT NULL,
-  `cc_type` varchar(250) NOT NULL,
-  `area` varchar(250) NOT NULL,
-  `ubicacion` varchar(150) NOT NULL,
-  `region` varchar(150) NOT NULL,
-  `supervisor` varchar(250) NOT NULL,
-  `empresa` longtext NOT NULL,
-  `estatus_expediente` varchar(45) NOT NULL DEFAULT 'WD Activo',
-  `user_update` varchar(45) DEFAULT NULL,
-  `fecha_alta` datetime DEFAULT CURRENT_TIMESTAMP,
-  `fecha_actualizacion` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`usuario`),
-  UNIQUE KEY `uk_nombre_full` (`nombre_full`),
-  KEY `idx_nombre_full` (`nombre_full`),
-  KEY `idx_usuario` (`usuario`),
-  KEY `idx_fecha_alta` (`fecha_alta`),
-  KEY `idx_fecha_actualizacion` (`fecha_actualizacion`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+CREATE INDEX idx_workday_nombre_usuario 
+ON eut_workday (nombre_full, usuario);
