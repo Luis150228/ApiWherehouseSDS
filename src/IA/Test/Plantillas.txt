@@ -1,138 +1,274 @@
-El siguiente procedimiento almacenado esta funcionando de forma correcta pero solo me regresa valores de la plantilla que pasaria si quisiera agregar valores de la tabla de servicenow_reportes por ejemplo abierto_por o ubicacion de esa tabla 
+Con la tabla CSV anexa de la CMDB quiero crear una funcion similar para cargarlos a la base, hay que crear las tablas eut_cmdb, eut_cmdb_bridge y los Store Procedure similares a los siguientes pero adaptados a las nuevas tablas para CMDB stp_addCMDB guarda informacion en la tabla de eut_cmdb_bridge posteriormente stp_addCMDBBridge transifiere el contenido de eut_cmdb_bridge a eut_cmdb, y truncate eut_cmdb_bridge al terminar, esto por que la tabla eut_cmdb tendra el historial de todos los equipos y con el tiempo se hace mas pesada de ahi opte por una tabla de transito para ver el avance de la carga de informacion, tambien necesito me ayudes a ajustar un el backend a la nueva tablas de cmdb
 
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all`()
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_addIncidents`(var_number VARCHAR(16), var_folio VARCHAR(16), var_sys_created_on DATETIME, var_work_end DATETIME, var_closed_at DATETIME, var_closed_by VARCHAR(250), var_assignment_group VARCHAR(250), var_assigned_to VARCHAR(250), var_state VARCHAR(250), var_category VARCHAR(250), var_subcategory VARCHAR(250), var_u_short_description_call VARCHAR(250), var_u_request_type VARCHAR(250), var_short_description MEDIUMTEXT, var_made_sla VARCHAR(12), var_u_zone VARCHAR(12), var_location VARCHAR(250), var_caller_id VARCHAR(250), var_sys_updated_by VARCHAR(250), var_calendar_duration VARCHAR(250), var_business_duration VARCHAR(250), var_company VARCHAR(250), var_description LONGTEXT, var_comments_and_work_notes LONGTEXT, var_opened_by VARCHAR(250), var_resolved_by VARCHAR(250), var_close_code VARCHAR(250), var_parent_incident VARCHAR(12), var_child_incidents VARCHAR(12), var_sys_updated_on DATETIME, var_sys_created_by VARCHAR(250), var_order_update DATETIME)
 BEGIN
-    DECLARE done INT DEFAULT FALSE;
-    DECLARE v_folio VARCHAR(20);
-    DECLARE v_texto LONGTEXT;
-    DECLARE v_bloque LONGTEXT;
-    DECLARE v_incidencia_principal VARCHAR(45);
-    DECLARE v_incidencia_secundarias INT;
-    DECLARE v_incidencia_padre VARCHAR(20);
 
-    DECLARE cur CURSOR FOR
-        SELECT r.folio,
-               r.incidencia_principal,
-               r.incidencia_secundarias,
-               CASE
-                   WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
-                   WHEN r.obs_notasresolucion LIKE '%/**Generic BEGIN**/%' THEN r.obs_notasresolucion
-                   ELSE NULL
-               END AS texto
-        FROM eut_reportesbk.servicenow_reportes r
-        WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
-			AND origen = 'SNGlobal Incidentes'
-          AND r.abierto >= '2025-07-01 00:00:00';
+DECLARE let_u_expediente INT;
 
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+SET let_u_expediente = (IF(var_u_expediente = '', SUBSTRING_INDEX(SUBSTRING_INDEX(var_assignment_group, 'Zona_', -1), '_', 1), var_u_zone));
 
-    DROP TEMPORARY TABLE IF EXISTS tmp_tabla_plantillas;
-    CREATE TEMPORARY TABLE tmp_tabla_plantillas (
-        folio VARCHAR(20),
-        incidencia_padre VARCHAR(20),
-        expediente VARCHAR(150),
-        ext_contacto VARCHAR(100),
-        cel_contacto VARCHAR(100),
-        nombre2_contacto VARCHAR(200),
-        cel2_contacto VARCHAR(100),
-        mail VARCHAR(200),
-        puesto VARCHAR(200),
-        CC VARCHAR(50),
-        region VARCHAR(100),
-        UPN VARCHAR(150),
-        usuario_n VARCHAR(100),
-        IP VARCHAR(100),
-        hostname VARCHAR(150),
-        tipo_usuario VARCHAR(100),
-        descripcion_incidente VARCHAR(500),
-        numero_afectados VARCHAR(50),
-        carrier VARCHAR(100),
-        IP_carrier VARCHAR(100)
-    );
+	INSERT INTO `eut_cmdb_bridge` (`folio`,`abierto`,`resuelto`,`cerrado`,`creado_por`,`grup_asig`,`asig_a`,`estatus`, `solucion`, `categoria`,`subcategoria`,`subcategoria2`,`tipoproblema`,`nombreproyecto`,`sla`,`zona_num`,`ubicacion`,`abierto_por`,`solicitante`,`duracion`,`duracion_negocio`,`empresa`,`descripcion`,`obs_notasresolucion`,`cerrado_por`,`resuelto_por`,`codigo_cierre`,`incidencia_principal`,`incidencia_secundarias`,`actualizado`,`mail_creador`, `limitadores`, `suc_corp`, `origen`, `ceco`) VALUES (var_folio, var_sys_created_on, var_work_end, var_closed_at, var_closed_by, var_assignment_group, var_assigned_to, var_state, fn_estatus(var_state), var_category, var_subcategory, var_u_short_description_call, var_u_request_type, var_short_description, var_made_sla, let_u_zone, var_location, var_caller_id, var_sys_updated_by, var_calendar_duration, var_business_duration, var_company, var_description, var_comments_and_work_notes, var_opened_by, var_resolved_by, var_close_code, var_parent_incident, var_child_incidents, var_sys_updated_on, var_sys_created_by, fn_incks(var_comments_and_work_notes), fn_suc_corp(var_location), 'SNGlobal Incidentes', fn_cecoINC('0', var_location, var_comments_and_work_notes));
 
-    OPEN cur;
+SELECT COUNT(*) as 'total', max(`abierto`) as 'actualizado', 'cmdb' as 'type' FROM `eut_cmdb_bridge` WHERE `f_alta` >= var_order_update and LEFT(`folio`, 3) = 'INC';
 
-    read_loop: LOOP
-        FETCH cur INTO v_folio, v_incidencia_principal, v_incidencia_secundarias, v_texto;
-        IF done THEN
-            LEAVE read_loop;
-        END IF;
-
-        -- Determinar incidencia_padre
-        IF v_incidencia_secundarias >= 1 THEN
-            SET v_incidencia_padre = v_folio;
-        ELSEIF v_incidencia_principal IS NOT NULL AND v_incidencia_principal != '' THEN
-            SET v_incidencia_padre = v_incidencia_principal;
-        ELSE
-            SET v_incidencia_padre = 'SIN DATOS';
-        END IF;
-
-        -- Extraer bloque entre BEGIN y END
-        IF v_texto IS NOT NULL THEN
-            SET v_bloque = REGEXP_SUBSTR(v_texto, '/\\*\\*Generic BEGIN\\*\\*/([\\s\\S]*?)/\\*\\*Generic END\\*\\*/');
-        ELSE
-            SET v_bloque = NULL;
-        END IF;
-
-        IF v_bloque IS NOT NULL THEN
-            SET v_bloque = REPLACE(v_bloque, '/**Generic BEGIN**/', '');
-            SET v_bloque = REPLACE(v_bloque, '/**Generic END**/', '');
-            SET v_bloque = REGEXP_REPLACE(v_bloque, '[[:space:]]+', ' ');
-
-            -- Extracción de campos
-            SET @Expediente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&EXPEDIENTE:[^&\n]+'), '&EXPEDIENTE:', ''))),''),'SIN DATOS');
-            SET @ext_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&EXT_CONTACTO:[^&\n]+'), '&EXT_CONTACTO:', ''))),''),'SIN DATOS');
-            SET @cel_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CEL_CONTACTO:[^&\n]+'), '&CEL_CONTACTO:', ''))),''),'SIN DATOS');
-            SET @nombre2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&NOMBRE2_CONTACTO:[^&\n]+'), '&NOMBRE2_CONTACTO:', ''))),''),'SIN DATOS');
-            SET @cel2_contacto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CEL2_CONTACTO:[^&\n]+'), '&CEL2_CONTACTO:', ''))),''),'SIN DATOS');
-            SET @Correo = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', '')),''),'SIN DATOS');
-            SET @Puesto = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&PUESTO:[^&\n]+'), '&PUESTO:', ''))),''),'SIN DATOS');
-            SET @CC = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CC:[^&\n]+'), '&CC:', ''))),''),'SIN DATOS');
-            SET @Region = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&REGION:[^&\n]+'), '&REGION:', ''))),''),'SIN DATOS');
-            SET @UPN = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&UPN:[^&\n]+'), '&UPN:', '')),''),'SIN DATOS');
-            SET @usuario_N = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&USUARIO_N:[^&\n]+'), '&USUARIO_N:', ''))),''),'SIN DATOS');
-            SET @IP = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''),'SIN DATOS');
-            SET @Hostname = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:[^&\n]+'), '&HOSTNAME:', ''))),''),'SIN DATOS');
-            SET @Tipo_usuario = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&TIPO_USUARIO:[^&\n]+'), '&TIPO_USUARIO:', ''))),''),'SIN DATOS');
-            SET @Descripcion_incidente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&DESCRIPCION_INCIDENTE:[^&\n]+'), '&DESCRIPCION_INCIDENTE:', ''))),''),'SIN DATOS');
-
-            -- Numero_afectados: solo números y guiones, espacios opcionales
-            SET @Numero_afectados = IFNULL(NULLIF(
-                UPPER(TRIM(
-                    REGEXP_REPLACE(
-                        REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'),
-                        '&NUMERO_AFECTADOS:[[:space:]]*', ''
-                    )
-                ))
-            ,''),'SIN DATOS');
-
-            SET @Carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CARRIER:[^&\n]+'), '&CARRIER:', ''))),''),'SIN DATOS');
-            SET @IP_Carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS');
-
-            -- Insertar fila tabulada
-            INSERT INTO tmp_tabla_plantillas
-            VALUES (
-                v_folio, v_incidencia_padre,
-                @Expediente, @ext_contacto, @cel_contacto, @nombre2_contacto, @cel2_contacto,
-                @Correo, @Puesto, @CC, @Region, @UPN, @usuario_N,
-                @IP, @Hostname, @Tipo_usuario, @Descripcion_incidente, @Numero_afectados,
-                @Carrier, @IP_Carrier
-            );
-        ELSE
-            -- Sin plantilla
-            INSERT INTO tmp_tabla_plantillas
-            VALUES (
-                v_folio, v_incidencia_padre,
-                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
-                'SIN DATOS', 'SIN DATOS'
-            );
-        END IF;
-
-    END LOOP;
-
-    CLOSE cur;
-
-    SELECT * FROM tmp_tabla_plantillas;
 END
+
+
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_addCMDBBridge`(var_token longtext, var_destino VARCHAR(50))
+BEGIN
+DECLARE dateActualizado datetime;
+DECLARE dateEdodatabase datetime;
+
+IF var_destino = 'incidentes' OR  var_destino = 'solicitudes' THEN
+	INSERT INTO `servicenow_reportes` (`folio`,`abierto`,`resuelto`,`cerrado`,`creado_por`,`grup_asig`,`asig_a`,`estatus`, `solucion`, `categoria`,`subcategoria`,`subcategoria2`,`tipoproblema`,`nombreproyecto`,`sla`,`zona_num`,`ubicacion`,`abierto_por`,`solicitante`,`duracion`,`duracion_negocio`,`empresa`,`descripcion`,`obs_notasresolucion`,`cerrado_por`,`resuelto_por`,`codigo_cierre`,`incidencia_principal`,`incidencia_secundarias`,`actualizado`,`mail_creador`, `limitadores`, `suc_corp`, `origen`, `ceco`) SELECT `folio`,`abierto`,`resuelto`,`cerrado`,`creado_por`,`grup_asig`,`asig_a`,`estatus`, `solucion`, `categoria`,`subcategoria`,`subcategoria2`,`tipoproblema`,`nombreproyecto`,`sla`,`zona_num`,`ubicacion`,`abierto_por`,`solicitante`,`duracion`,`duracion_negocio`,`empresa`,`descripcion`,`obs_notasresolucion`,`cerrado_por`,`resuelto_por`,`codigo_cierre`,`incidencia_principal`,`incidencia_secundarias`,`actualizado`,`mail_creador`, `limitadores`, `suc_corp`, `origen`, `ceco` FROM `servicenow_bridge` ON DUPLICATE KEY UPDATE `resuelto` = VALUES(`resuelto`), `cerrado` = VALUES(`cerrado`), `grup_asig` = VALUES(`grup_asig`), `asig_a` = VALUES(`asig_a`), `estatus` = VALUES(`estatus`), `solucion` = VALUES(`solucion`), `zona_num` = VALUES(`zona_num`), `ubicacion` = VALUES(`ubicacion`), `duracion` = VALUES(`duracion`), `duracion_negocio` = VALUES(`duracion_negocio`), `empresa` = VALUES(`empresa`), `descripcion` = VALUES(`descripcion`), `sla` = VALUES(`sla`), `zona_num` = VALUES(`zona_num`), `obs_notasresolucion` = VALUES(`obs_notasresolucion`), `cerrado_por` = VALUES(`cerrado_por`), `resuelto_por` = VALUES(`resuelto_por`), `codigo_cierre` = VALUES(`codigo_cierre`), `incidencia_principal` = VALUES(`incidencia_principal`), `incidencia_secundarias` = VALUES(`incidencia_secundarias`), `actualizado` = VALUES(`actualizado`), `mail_creador` = VALUES(`mail_creador`), `limitadores` = VALUES(`limitadores`), `suc_corp` = VALUES(`suc_corp`), `origen` = VALUES(`origen`), `ceco` = VALUES(`ceco`);
+
+	SET dateActualizado = (SELECT max(`abierto`) FROM `servicenow_bridge` WHERE 1);
+	SET dateEdodatabase = (SELECT `dbUpdate` FROM `edodatabase` WHERE `nombre` = var_destino);
+
+	IF dateActualizado > dateEdodatabase THEN
+		UPDATE `edodatabase` SET `dbUpdate` = dateActualizado WHERE (`id` >= 0) AND `nombre` = var_destino;
+	END IF;
+    
+    TRUNCATE `servicenow_bridge`;
+
+	CALL stp_addPromedios();
+
+	SELECT `etiqueta`, `dbUpdate`, fn_links(`orden`, `dbUpdate`) AS 'link' FROM `edodatabase` WHERE `nombre` = var_destino;
+
+ELSEIF var_destino = 'incexc' THEN
+
+	INSERT INTO `eut_weeklyreportsinc` (`Ticket`,`Zona`,`Estatus`,`Inhibidor`,`INHIBIDOR_CODIGO`,`CodigoDescripcion`,`Descripcion_Resolutor`,`Comentarios_Resolutor`,`Procede`,`CCG`,`SEMANAL`,`REPORTE`) SELECT folio, zona, estatus, inhibidor, inh_code, code_desc, decrip_res, coment_res, procede, ccg, semana, reporte FROM `eut_weeklyreportinc_bridge`
+    ON DUPLICATE KEY UPDATE `Zona` = VALUES(`Zona`),`Estatus` = VALUES(`Estatus`),`Inhibidor`= VALUES(`Inhibidor`),`INHIBIDOR_CODIGO`= VALUES(`INHIBIDOR_CODIGO`),`CodigoDescripcion`= VALUES(`CodigoDescripcion`),`Descripcion_Resolutor`= VALUES(`Descripcion_Resolutor`),`Comentarios_Resolutor`= VALUES(`Comentarios_Resolutor`),`Procede`= VALUES(`Procede`),`CCG`= VALUES(`CCG`);
+
+	SET dateActualizado = (SELECT NOW());
+	SET dateEdodatabase = (SELECT `dbUpdate` FROM `edodatabase` WHERE `nombre` = var_destino);
+
+	IF dateActualizado > dateEdodatabase THEN
+		UPDATE `edodatabase` SET `dbUpdate` = dateActualizado WHERE (`id` >= 0) AND `nombre` = var_destino;
+	END IF;
+    
+    TRUNCATE `eut_weeklyreportinc_bridge`;
+    UPDATE eut_weeklyreportsinc SET  `CCG` = 'En Metrica' WHERE `Procede` = 'no_procede';
+	UPDATE eut_weeklyreportsinc SET  `CCG` = 'Fuera de Metrica' WHERE `Procede` = 'procede';
+	UPDATE eut_weeklyreportsinc SET  `REPORTE` = 'CAU_INCK', `Inhibidor` = 'VK' WHERE `CodigoDescripcion` = '6' AND `Procede` = 'procede';
+
+	SELECT `etiqueta`, `dbUpdate`, fn_links(`orden`, `dbUpdate`) AS 'link' FROM `edodatabase` WHERE `nombre` = var_destino;
+
+ELSEIF var_destino = 'solexc' THEN
+
+	INSERT INTO `eut_weeklyreportssol` (`Solicitud`, `INHIBIDOR_CODIGO`, `CODIGO`, `CAUSA`, `OBSERVACIONES_RESOLUTOR`, `PROCEDE`, `CCG`, `SEMANAL`, `REPORTE`) SELECT folio, inhibidor, inh_code, code_desc, coment_res, procede, ccg, semana, reporte FROM `eut_weeklyreportsol_bridge`
+    ON DUPLICATE KEY UPDATE `INHIBIDOR_CODIGO` = VALUES(`INHIBIDOR_CODIGO`), `CODIGO` = VALUES(`CODIGO`), `CAUSA` = VALUES(`CAUSA`), `OBSERVACIONES_RESOLUTOR` = VALUES(`OBSERVACIONES_RESOLUTOR`), `PROCEDE` = VALUES(`PROCEDE`), `CCG` = VALUES(`CCG`);
+
+	SET dateActualizado = (SELECT NOW());
+	SET dateEdodatabase = (SELECT `dbUpdate` FROM `edodatabase` WHERE `nombre` = var_destino);
+
+	IF dateActualizado > dateEdodatabase THEN
+		UPDATE `edodatabase` SET `dbUpdate` = dateActualizado WHERE (`id` >= 0) AND `nombre` = var_destino;
+	END IF;
+    TRUNCATE `eut_weeklyreportsol_bridge`;
+    
+	SELECT `etiqueta`, `dbUpdate`, fn_links(`orden`, `dbUpdate`) AS 'link' FROM `edodatabase` WHERE `nombre` = var_destino;
+
+END IF;
+END
+
+
+/***Backend PHP*****/
+
+rutes/cmdb.PHP
+<?php
+include_once "../classes/cmdbImport.class.php";
+
+$_consult = new valoresInc;
+
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, PUT, DELETE, GET');
+
+$contBody = file_get_contents('php://input');
+$bodyJson = json_decode($contBody, true);
+$headers = getallheaders();
+// foreach ($_GET as $key => $value) {
+//     echo $key.'=>'.$value.'<br>';
+// }
+
+if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+    if (isset($headers['token']) && isset($_GET['catalogo'])) {
+        // $dataClass = $_consult->readData($headers['token'], $_GET['catalogo']);
+    } else if (isset($headers['token']) && isset($_GET['bridge'])) {
+        $dataClass = $_consult->exceuteBridge($headers['token'], $_GET['bridge']);
+    } else if (isset($headers['token']) && isset($_GET['bridge'])) {
+        $dataClass = $_consult->exceuteBridge($headers['token'], $_GET['reload']);
+    } else {
+        http_response_code(203);
+        header('Content-Type: application/json; charset=UTF-8');
+    }
+} else if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($headers['time-update'])) {
+        $dataClass = $_consult->readDataCMDB($contBody, $headers['time-update']);
+    } elseif (isset($headers['token']) && ($bodyJson['orden'] == 'menu')) {
+        // $dataClass = $_consult->createNavOne($contBody);
+    }
+    http_response_code(200);
+} else if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
+    http_response_code(200);
+} else if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+    http_response_code(200);
+} else {
+    http_response_code(400);
+}
+
+header('Content-Type: application/json; charset=UTF-8');
+echo json_encode($dataClass);
+
+
+../classes/cmdbImport.class.php
+<?php
+ini_set('max_execution_time', 300);
+require_once "../conexion/cnx.php";
+
+class valoresInc extends cnx
+{
+
+    public function readDataCMDB($datos, $dateOrder)
+    {
+        $json = json_decode($datos, true);
+        $typeFolio = $json[0]['task_effective_number'];
+
+        // print_r(strpos($typeFolio, "INC"));
+        // /*
+        if (strpos($typeFolio, "INC") == 0) {
+            foreach ($json as $value) {
+                $number = $value['number'];
+                $folio = $value['task_effective_number'];
+                $sys_created_on = $value['sys_created_on'];
+                $work_end = $value['work_end'];
+                $closed_at = $value['closed_at'];
+                $closed_by = $value['closed_by'];
+                $assignment_group = $value['assignment_group'];
+                $assigned_to = $value['assigned_to'];
+                $state = $value['state'];
+                $category = $value['category'];
+                $subcategory = $value['subcategory'];
+                $u_short_description_call = $value['u_short_description_call'];
+                $u_request_type = $value['u_request_type'];
+                $short_description = str_replace(array("'", '"', '__'), '', $value['short_description']);
+                $made_sla = $value['made_sla'];
+                $u_zone = $value['u_zone'];
+                $location = $value['location'];
+                $caller_id = str_replace(array("'", '"', '__'), '', $value['caller_id']);
+                $sys_updated_by = $value['sys_updated_by'];
+                $calendar_duration = $value['calendar_duration'];
+                $business_duration = $value['business_duration'];
+                $company = $value['company'];
+                $description = str_replace(array("'", '"', '__'), '', $value['description']);
+                $comments_and_work_notes = str_replace(array("'", '"', '__'), '', $value['comments_and_work_notes']);
+                $opened_by = str_replace(array("'", '"', '__'), '', $value['opened_by']);
+                $resolved_by = $value['resolved_by'];
+                $close_code = $value['close_code'];
+                $parent_incident = $value['parent_incident'];
+                $child_incidents = $value['child_incidents'];
+                $sys_updated_on = $value['sys_updated_on'];
+                $sys_created_by = $value['sys_created_by'];
+                $data = $this->uploadData($number, $folio, $sys_created_on, $work_end, $closed_at, $closed_by, $assignment_group, $assigned_to, $state, $category, $subcategory, $u_short_description_call, $u_request_type, $short_description, $made_sla, $u_zone, $location, $caller_id, $sys_updated_by, $calendar_duration, $business_duration, $company, $description, $comments_and_work_notes, $opened_by, $resolved_by, $close_code, $parent_incident, $child_incidents, $sys_updated_on, $sys_created_by, $dateOrder);
+            };
+            return $data;
+        } else {
+            $result = array(
+                "code" => "204",
+                "mnj" => "Error el archivo no contiene incidentes",
+                "data" => '',
+            );
+
+            return $result;
+        }
+        // */
+    }
+
+
+    public function exceuteBridge($token, $puente)
+    {
+        $data = $this->useBridge($token, $puente);
+
+        return $data;
+    }
+
+    public function clearBridge($token, $orden)
+    {
+        $data = $this->cleanBridge($token, $orden);
+
+        return $data;
+    }
+
+    private function uploadData($number, $folio, $sys_created_on, $work_end, $closed_at, $closed_by, $assignment_group, $assigned_to, $state, $category, $subcategory, $u_short_description_call, $u_request_type, $short_description, $made_sla, $u_zone, $location, $caller_id, $sys_updated_by, $calendar_duration, $business_duration, $company, $description, $comments_and_work_notes, $opened_by, $resolved_by, $close_code, $parent_incident, $child_incidents, $sys_updated_on, $sys_created_by, $dateOrder)
+    {
+        $sql = "CALL stp_addCMDB('$number','$folio','$sys_created_on','$work_end','$closed_at','$closed_by','$assignment_group','$assigned_to','$state','$category','$subcategory','$u_short_description_call','$u_request_type','$short_description','$made_sla','$u_zone','$location','$caller_id','$sys_updated_by','$calendar_duration','$business_duration','$company','$description','$comments_and_work_notes','$opened_by','$resolved_by','$close_code','$parent_incident','$child_incidents','$sys_updated_on','$sys_created_by','$dateOrder')";
+        // print_r($sql);
+        // /*
+        $query = parent::getData($sql);
+
+        if (empty($query)) {
+            $result = array(
+                "code" => "204",
+                "mnj" => "Error al subir informacion layout incorrecto",
+                "data" => "",
+            );
+        } else {
+            $result = array(
+                "code" => "200",
+                "mnj" => "Datos Procesados",
+                "data" => $query
+            );
+        }
+
+        return $result;
+        // */
+    }
+
+
+    private function useBridge($tk, $p)
+    {
+        $sql = "CALL stp_addDBBridge('$tk', '$p')";
+        $query = parent::getData($sql);
+
+        if (empty($query)) {
+            $result = array(
+                "code" => "204",
+                "mnj" => "Error en la sincronizacion informacion archivo incorrecto",
+                "data" => "",
+            );
+        } else {
+            $result = array(
+                "code" => "200",
+                "mnj" => "Importacion correcta en base principal",
+                "data" => $query
+            );
+        }
+
+        return $result;
+    }
+
+    private function cleanBridge($tk)
+    {
+        $sql = "CALL stp_addDBBridgeClear('$tk')";
+        $query = parent::getData($sql);
+
+        if (empty($query)) {
+            $result = array(
+                "code" => "204",
+                "mnj" => "Falla del servidor",
+                "data" => "",
+            );
+        } else {
+            $result = array(
+                "code" => "200",
+                "mnj" => "Limpieza Terminada",
+                "data" => $query
+            );
+        }
+
+        return $result;
+    }
+}
+
+
+/***Backend PHP*****/
