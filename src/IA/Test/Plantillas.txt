@@ -1,274 +1,221 @@
-Con la tabla CSV anexa de la CMDB quiero crear una funcion similar para cargarlos a la base, hay que crear las tablas eut_cmdb, eut_cmdb_bridge y los Store Procedure similares a los siguientes pero adaptados a las nuevas tablas para CMDB stp_addCMDB guarda informacion en la tabla de eut_cmdb_bridge posteriormente stp_addCMDBBridge transifiere el contenido de eut_cmdb_bridge a eut_cmdb, y truncate eut_cmdb_bridge al terminar, esto por que la tabla eut_cmdb tendra el historial de todos los equipos y con el tiempo se hace mas pesada de ahi opte por una tabla de transito para ver el avance de la carga de informacion, tambien necesito me ayudes a ajustar un el backend a la nueva tablas de cmdb
+/****SQL*****/
+CREATE TABLE `eut_cmdb_bridge` (
+  `asset_tag` VARCHAR(50) NOT NULL,
+  `u_type_ref` VARCHAR(50),
+  `name` VARCHAR(255),
+  `assigned_to` VARCHAR(255),
+  `serial_number` VARCHAR(100),
+  `u_status` VARCHAR(100),
+  `u_status_reason` VARCHAR(255),
+  `assignment_group` VARCHAR(255),
+  `manufacturer` VARCHAR(100),
+  `model_id` VARCHAR(255),
+  `u_third_company` VARCHAR(255),
+  `dns_domain` VARCHAR(255),
+  `u_delivery` VARCHAR(255),
+  `used_for` VARCHAR(100),
+  `u_obsolescence_date_hw` DATE,
+  `u_obsolescence_date_sw` DATE,
+  `u_os_model_id` VARCHAR(255),
+  `sys_class_name` VARCHAR(100),
+  `sys_created_by` VARCHAR(255),
+  `company` VARCHAR(255),
+  `comments` LONGTEXT,
+  `u_category` VARCHAR(100),
+  `managed_by` VARCHAR(255),
+  `support_group` VARCHAR(255),
+  `owned_by` VARCHAR(255),
+  `location` VARCHAR(255),
+  `u_created_date` DATETIME,
+  `sys_updated_on` DATETIME,
+  `sys_updated_by` VARCHAR(255),
+  `mac_address` VARCHAR(100),
+  `ip_address` VARCHAR(100),
+  `u_adm_ip_address` VARCHAR(100),
+  `fqdn` VARCHAR(255),
+  `f_alta` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_addIncidents`(var_number VARCHAR(16), var_folio VARCHAR(16), var_sys_created_on DATETIME, var_work_end DATETIME, var_closed_at DATETIME, var_closed_by VARCHAR(250), var_assignment_group VARCHAR(250), var_assigned_to VARCHAR(250), var_state VARCHAR(250), var_category VARCHAR(250), var_subcategory VARCHAR(250), var_u_short_description_call VARCHAR(250), var_u_request_type VARCHAR(250), var_short_description MEDIUMTEXT, var_made_sla VARCHAR(12), var_u_zone VARCHAR(12), var_location VARCHAR(250), var_caller_id VARCHAR(250), var_sys_updated_by VARCHAR(250), var_calendar_duration VARCHAR(250), var_business_duration VARCHAR(250), var_company VARCHAR(250), var_description LONGTEXT, var_comments_and_work_notes LONGTEXT, var_opened_by VARCHAR(250), var_resolved_by VARCHAR(250), var_close_code VARCHAR(250), var_parent_incident VARCHAR(12), var_child_incidents VARCHAR(12), var_sys_updated_on DATETIME, var_sys_created_by VARCHAR(250), var_order_update DATETIME)
+
+CREATE TABLE `eut_cmdb` LIKE `eut_cmdb_bridge`;
+
+
+DELIMITER $$
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_addCMDB`(
+    IN var_asset_tag VARCHAR(50),
+    IN var_u_type_ref VARCHAR(50),
+    IN var_name VARCHAR(255),
+    IN var_assigned_to VARCHAR(255),
+    IN var_serial_number VARCHAR(100),
+    IN var_u_status VARCHAR(100),
+    IN var_u_status_reason VARCHAR(255),
+    IN var_assignment_group VARCHAR(255),
+    IN var_manufacturer VARCHAR(100),
+    IN var_model_id VARCHAR(255),
+    IN var_u_third_company VARCHAR(255),
+    IN var_dns_domain VARCHAR(255),
+    IN var_u_delivery VARCHAR(255),
+    IN var_used_for VARCHAR(100),
+    IN var_u_obsolescence_date_hw DATE,
+    IN var_u_obsolescence_date_sw DATE,
+    IN var_u_os_model_id VARCHAR(255),
+    IN var_sys_class_name VARCHAR(100),
+    IN var_sys_created_by VARCHAR(255),
+    IN var_company VARCHAR(255),
+    IN var_comments LONGTEXT,
+    IN var_u_category VARCHAR(100),
+    IN var_managed_by VARCHAR(255),
+    IN var_support_group VARCHAR(255),
+    IN var_owned_by VARCHAR(255),
+    IN var_location VARCHAR(255),
+    IN var_u_created_date DATETIME,
+    IN var_sys_updated_on DATETIME,
+    IN var_sys_updated_by VARCHAR(255),
+    IN var_mac_address VARCHAR(100),
+    IN var_ip_address VARCHAR(100),
+    IN var_u_adm_ip_address VARCHAR(100),
+    IN var_fqdn VARCHAR(255)
+)
 BEGIN
+    INSERT INTO `eut_cmdb_bridge` (
+        asset_tag, u_type_ref, name, assigned_to, serial_number,
+        u_status, u_status_reason, assignment_group, manufacturer, model_id,
+        u_third_company, dns_domain, u_delivery, used_for,
+        u_obsolescence_date_hw, u_obsolescence_date_sw, u_os_model_id,
+        sys_class_name, sys_created_by, company, comments, u_category,
+        managed_by, support_group, owned_by, location, u_created_date,
+        sys_updated_on, sys_updated_by, mac_address, ip_address,
+        u_adm_ip_address, fqdn
+    )
+    VALUES (
+        var_asset_tag, var_u_type_ref, var_name, var_assigned_to, var_serial_number,
+        var_u_status, var_u_status_reason, var_assignment_group, var_manufacturer, var_model_id,
+        var_u_third_company, var_dns_domain, var_u_delivery, var_used_for,
+        var_u_obsolescence_date_hw, var_u_obsolescence_date_sw, var_u_os_model_id,
+        var_sys_class_name, var_sys_created_by, var_company, var_comments, var_u_category,
+        var_managed_by, var_support_group, var_owned_by, var_location, var_u_created_date,
+        var_sys_updated_on, var_sys_updated_by, var_mac_address, var_ip_address,
+        var_u_adm_ip_address, var_fqdn
+    );
 
-DECLARE let_u_expediente INT;
-
-SET let_u_expediente = (IF(var_u_expediente = '', SUBSTRING_INDEX(SUBSTRING_INDEX(var_assignment_group, 'Zona_', -1), '_', 1), var_u_zone));
-
-	INSERT INTO `eut_cmdb_bridge` (`folio`,`abierto`,`resuelto`,`cerrado`,`creado_por`,`grup_asig`,`asig_a`,`estatus`, `solucion`, `categoria`,`subcategoria`,`subcategoria2`,`tipoproblema`,`nombreproyecto`,`sla`,`zona_num`,`ubicacion`,`abierto_por`,`solicitante`,`duracion`,`duracion_negocio`,`empresa`,`descripcion`,`obs_notasresolucion`,`cerrado_por`,`resuelto_por`,`codigo_cierre`,`incidencia_principal`,`incidencia_secundarias`,`actualizado`,`mail_creador`, `limitadores`, `suc_corp`, `origen`, `ceco`) VALUES (var_folio, var_sys_created_on, var_work_end, var_closed_at, var_closed_by, var_assignment_group, var_assigned_to, var_state, fn_estatus(var_state), var_category, var_subcategory, var_u_short_description_call, var_u_request_type, var_short_description, var_made_sla, let_u_zone, var_location, var_caller_id, var_sys_updated_by, var_calendar_duration, var_business_duration, var_company, var_description, var_comments_and_work_notes, var_opened_by, var_resolved_by, var_close_code, var_parent_incident, var_child_incidents, var_sys_updated_on, var_sys_created_by, fn_incks(var_comments_and_work_notes), fn_suc_corp(var_location), 'SNGlobal Incidentes', fn_cecoINC('0', var_location, var_comments_and_work_notes));
-
-SELECT COUNT(*) as 'total', max(`abierto`) as 'actualizado', 'cmdb' as 'type' FROM `eut_cmdb_bridge` WHERE `f_alta` >= var_order_update and LEFT(`folio`, 3) = 'INC';
-
-END
+    SELECT COUNT(*) AS total, MAX(`f_alta`) AS actualizado, 'cmdb' AS type FROM `eut_cmdb_bridge`;
+END$$
+DELIMITER ;
 
 
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_addCMDBBridge`(var_token longtext, var_destino VARCHAR(50))
+DELIMITER $$
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_addCMDBBridge`()
 BEGIN
-DECLARE dateActualizado datetime;
-DECLARE dateEdodatabase datetime;
+    -- Transferir datos del puente a la tabla histórica
+    INSERT INTO `eut_cmdb`
+    SELECT * FROM `eut_cmdb_bridge`
+    ON DUPLICATE KEY UPDATE
+        u_status = VALUES(u_status),
+        u_status_reason = VALUES(u_status_reason),
+        assignment_group = VALUES(assignment_group),
+        sys_updated_on = VALUES(sys_updated_on),
+        sys_updated_by = VALUES(sys_updated_by),
+        comments = VALUES(comments);
 
-IF var_destino = 'incidentes' OR  var_destino = 'solicitudes' THEN
-	INSERT INTO `servicenow_reportes` (`folio`,`abierto`,`resuelto`,`cerrado`,`creado_por`,`grup_asig`,`asig_a`,`estatus`, `solucion`, `categoria`,`subcategoria`,`subcategoria2`,`tipoproblema`,`nombreproyecto`,`sla`,`zona_num`,`ubicacion`,`abierto_por`,`solicitante`,`duracion`,`duracion_negocio`,`empresa`,`descripcion`,`obs_notasresolucion`,`cerrado_por`,`resuelto_por`,`codigo_cierre`,`incidencia_principal`,`incidencia_secundarias`,`actualizado`,`mail_creador`, `limitadores`, `suc_corp`, `origen`, `ceco`) SELECT `folio`,`abierto`,`resuelto`,`cerrado`,`creado_por`,`grup_asig`,`asig_a`,`estatus`, `solucion`, `categoria`,`subcategoria`,`subcategoria2`,`tipoproblema`,`nombreproyecto`,`sla`,`zona_num`,`ubicacion`,`abierto_por`,`solicitante`,`duracion`,`duracion_negocio`,`empresa`,`descripcion`,`obs_notasresolucion`,`cerrado_por`,`resuelto_por`,`codigo_cierre`,`incidencia_principal`,`incidencia_secundarias`,`actualizado`,`mail_creador`, `limitadores`, `suc_corp`, `origen`, `ceco` FROM `servicenow_bridge` ON DUPLICATE KEY UPDATE `resuelto` = VALUES(`resuelto`), `cerrado` = VALUES(`cerrado`), `grup_asig` = VALUES(`grup_asig`), `asig_a` = VALUES(`asig_a`), `estatus` = VALUES(`estatus`), `solucion` = VALUES(`solucion`), `zona_num` = VALUES(`zona_num`), `ubicacion` = VALUES(`ubicacion`), `duracion` = VALUES(`duracion`), `duracion_negocio` = VALUES(`duracion_negocio`), `empresa` = VALUES(`empresa`), `descripcion` = VALUES(`descripcion`), `sla` = VALUES(`sla`), `zona_num` = VALUES(`zona_num`), `obs_notasresolucion` = VALUES(`obs_notasresolucion`), `cerrado_por` = VALUES(`cerrado_por`), `resuelto_por` = VALUES(`resuelto_por`), `codigo_cierre` = VALUES(`codigo_cierre`), `incidencia_principal` = VALUES(`incidencia_principal`), `incidencia_secundarias` = VALUES(`incidencia_secundarias`), `actualizado` = VALUES(`actualizado`), `mail_creador` = VALUES(`mail_creador`), `limitadores` = VALUES(`limitadores`), `suc_corp` = VALUES(`suc_corp`), `origen` = VALUES(`origen`), `ceco` = VALUES(`ceco`);
+    -- Limpiar tabla puente
+    TRUNCATE `eut_cmdb_bridge`;
 
-	SET dateActualizado = (SELECT max(`abierto`) FROM `servicenow_bridge` WHERE 1);
-	SET dateEdodatabase = (SELECT `dbUpdate` FROM `edodatabase` WHERE `nombre` = var_destino);
-
-	IF dateActualizado > dateEdodatabase THEN
-		UPDATE `edodatabase` SET `dbUpdate` = dateActualizado WHERE (`id` >= 0) AND `nombre` = var_destino;
-	END IF;
-    
-    TRUNCATE `servicenow_bridge`;
-
-	CALL stp_addPromedios();
-
-	SELECT `etiqueta`, `dbUpdate`, fn_links(`orden`, `dbUpdate`) AS 'link' FROM `edodatabase` WHERE `nombre` = var_destino;
-
-ELSEIF var_destino = 'incexc' THEN
-
-	INSERT INTO `eut_weeklyreportsinc` (`Ticket`,`Zona`,`Estatus`,`Inhibidor`,`INHIBIDOR_CODIGO`,`CodigoDescripcion`,`Descripcion_Resolutor`,`Comentarios_Resolutor`,`Procede`,`CCG`,`SEMANAL`,`REPORTE`) SELECT folio, zona, estatus, inhibidor, inh_code, code_desc, decrip_res, coment_res, procede, ccg, semana, reporte FROM `eut_weeklyreportinc_bridge`
-    ON DUPLICATE KEY UPDATE `Zona` = VALUES(`Zona`),`Estatus` = VALUES(`Estatus`),`Inhibidor`= VALUES(`Inhibidor`),`INHIBIDOR_CODIGO`= VALUES(`INHIBIDOR_CODIGO`),`CodigoDescripcion`= VALUES(`CodigoDescripcion`),`Descripcion_Resolutor`= VALUES(`Descripcion_Resolutor`),`Comentarios_Resolutor`= VALUES(`Comentarios_Resolutor`),`Procede`= VALUES(`Procede`),`CCG`= VALUES(`CCG`);
-
-	SET dateActualizado = (SELECT NOW());
-	SET dateEdodatabase = (SELECT `dbUpdate` FROM `edodatabase` WHERE `nombre` = var_destino);
-
-	IF dateActualizado > dateEdodatabase THEN
-		UPDATE `edodatabase` SET `dbUpdate` = dateActualizado WHERE (`id` >= 0) AND `nombre` = var_destino;
-	END IF;
-    
-    TRUNCATE `eut_weeklyreportinc_bridge`;
-    UPDATE eut_weeklyreportsinc SET  `CCG` = 'En Metrica' WHERE `Procede` = 'no_procede';
-	UPDATE eut_weeklyreportsinc SET  `CCG` = 'Fuera de Metrica' WHERE `Procede` = 'procede';
-	UPDATE eut_weeklyreportsinc SET  `REPORTE` = 'CAU_INCK', `Inhibidor` = 'VK' WHERE `CodigoDescripcion` = '6' AND `Procede` = 'procede';
-
-	SELECT `etiqueta`, `dbUpdate`, fn_links(`orden`, `dbUpdate`) AS 'link' FROM `edodatabase` WHERE `nombre` = var_destino;
-
-ELSEIF var_destino = 'solexc' THEN
-
-	INSERT INTO `eut_weeklyreportssol` (`Solicitud`, `INHIBIDOR_CODIGO`, `CODIGO`, `CAUSA`, `OBSERVACIONES_RESOLUTOR`, `PROCEDE`, `CCG`, `SEMANAL`, `REPORTE`) SELECT folio, inhibidor, inh_code, code_desc, coment_res, procede, ccg, semana, reporte FROM `eut_weeklyreportsol_bridge`
-    ON DUPLICATE KEY UPDATE `INHIBIDOR_CODIGO` = VALUES(`INHIBIDOR_CODIGO`), `CODIGO` = VALUES(`CODIGO`), `CAUSA` = VALUES(`CAUSA`), `OBSERVACIONES_RESOLUTOR` = VALUES(`OBSERVACIONES_RESOLUTOR`), `PROCEDE` = VALUES(`PROCEDE`), `CCG` = VALUES(`CCG`);
-
-	SET dateActualizado = (SELECT NOW());
-	SET dateEdodatabase = (SELECT `dbUpdate` FROM `edodatabase` WHERE `nombre` = var_destino);
-
-	IF dateActualizado > dateEdodatabase THEN
-		UPDATE `edodatabase` SET `dbUpdate` = dateActualizado WHERE (`id` >= 0) AND `nombre` = var_destino;
-	END IF;
-    TRUNCATE `eut_weeklyreportsol_bridge`;
-    
-	SELECT `etiqueta`, `dbUpdate`, fn_links(`orden`, `dbUpdate`) AS 'link' FROM `edodatabase` WHERE `nombre` = var_destino;
-
-END IF;
-END
+    -- Retornar resumen
+    SELECT COUNT(*) AS total, NOW() AS actualizado, 'cmdb' AS type;
+END$$
+DELIMITER ;
 
 
-/***Backend PHP*****/
+/******  PHP   ******/
 
-rutes/cmdb.PHP
-<?php
-include_once "../classes/cmdbImport.class.php";
-
-$_consult = new valoresInc;
-
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, PUT, DELETE, GET');
-
-$contBody = file_get_contents('php://input');
-$bodyJson = json_decode($contBody, true);
-$headers = getallheaders();
-// foreach ($_GET as $key => $value) {
-//     echo $key.'=>'.$value.'<br>';
-// }
-
-if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    if (isset($headers['token']) && isset($_GET['catalogo'])) {
-        // $dataClass = $_consult->readData($headers['token'], $_GET['catalogo']);
-    } else if (isset($headers['token']) && isset($_GET['bridge'])) {
-        $dataClass = $_consult->exceuteBridge($headers['token'], $_GET['bridge']);
-    } else if (isset($headers['token']) && isset($_GET['bridge'])) {
-        $dataClass = $_consult->exceuteBridge($headers['token'], $_GET['reload']);
-    } else {
-        http_response_code(203);
-        header('Content-Type: application/json; charset=UTF-8');
-    }
-} else if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($headers['time-update'])) {
-        $dataClass = $_consult->readDataCMDB($contBody, $headers['time-update']);
-    } elseif (isset($headers['token']) && ($bodyJson['orden'] == 'menu')) {
-        // $dataClass = $_consult->createNavOne($contBody);
-    }
-    http_response_code(200);
-} else if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
-    http_response_code(200);
-} else if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
-    http_response_code(200);
-} else {
-    http_response_code(400);
-}
-
-header('Content-Type: application/json; charset=UTF-8');
-echo json_encode($dataClass);
-
-
-../classes/cmdbImport.class.php
-<?php
-ini_set('max_execution_time', 300);
-require_once "../conexion/cnx.php";
-
-class valoresInc extends cnx
+public function readDataCMDB($datos, $dateOrder)
 {
+    $json = json_decode($datos, true);
 
-    public function readDataCMDB($datos, $dateOrder)
-    {
-        $json = json_decode($datos, true);
-        $typeFolio = $json[0]['task_effective_number'];
-
-        // print_r(strpos($typeFolio, "INC"));
-        // /*
-        if (strpos($typeFolio, "INC") == 0) {
-            foreach ($json as $value) {
-                $number = $value['number'];
-                $folio = $value['task_effective_number'];
-                $sys_created_on = $value['sys_created_on'];
-                $work_end = $value['work_end'];
-                $closed_at = $value['closed_at'];
-                $closed_by = $value['closed_by'];
-                $assignment_group = $value['assignment_group'];
-                $assigned_to = $value['assigned_to'];
-                $state = $value['state'];
-                $category = $value['category'];
-                $subcategory = $value['subcategory'];
-                $u_short_description_call = $value['u_short_description_call'];
-                $u_request_type = $value['u_request_type'];
-                $short_description = str_replace(array("'", '"', '__'), '', $value['short_description']);
-                $made_sla = $value['made_sla'];
-                $u_zone = $value['u_zone'];
-                $location = $value['location'];
-                $caller_id = str_replace(array("'", '"', '__'), '', $value['caller_id']);
-                $sys_updated_by = $value['sys_updated_by'];
-                $calendar_duration = $value['calendar_duration'];
-                $business_duration = $value['business_duration'];
-                $company = $value['company'];
-                $description = str_replace(array("'", '"', '__'), '', $value['description']);
-                $comments_and_work_notes = str_replace(array("'", '"', '__'), '', $value['comments_and_work_notes']);
-                $opened_by = str_replace(array("'", '"', '__'), '', $value['opened_by']);
-                $resolved_by = $value['resolved_by'];
-                $close_code = $value['close_code'];
-                $parent_incident = $value['parent_incident'];
-                $child_incidents = $value['child_incidents'];
-                $sys_updated_on = $value['sys_updated_on'];
-                $sys_created_by = $value['sys_created_by'];
-                $data = $this->uploadData($number, $folio, $sys_created_on, $work_end, $closed_at, $closed_by, $assignment_group, $assigned_to, $state, $category, $subcategory, $u_short_description_call, $u_request_type, $short_description, $made_sla, $u_zone, $location, $caller_id, $sys_updated_by, $calendar_duration, $business_duration, $company, $description, $comments_and_work_notes, $opened_by, $resolved_by, $close_code, $parent_incident, $child_incidents, $sys_updated_on, $sys_created_by, $dateOrder);
-            };
-            return $data;
-        } else {
-            $result = array(
-                "code" => "204",
-                "mnj" => "Error el archivo no contiene incidentes",
-                "data" => '',
-            );
-
-            return $result;
-        }
-        // */
+    // Validar que tenga el campo clave del layout (asset_tag)
+    if (!isset($json[0]['asset_tag'])) {
+        return [
+            "code" => "204",
+            "mnj" => "Error: el archivo no contiene datos válidos de CMDB",
+            "data" => ''
+        ];
     }
 
+    foreach ($json as $value) {
+        $asset_tag              = $value['asset_tag'] ?? '';
+        $u_type_ref             = $value['u_type_ref'] ?? '';
+        $name                   = $value['name'] ?? '';
+        $assigned_to            = $value['assigned_to'] ?? '';
+        $serial_number          = $value['serial_number'] ?? '';
+        $u_status               = $value['u_status'] ?? '';
+        $u_status_reason        = $value['u_status_reason'] ?? '';
+        $assignment_group       = $value['assignment_group'] ?? '';
+        $manufacturer           = $value['manufacturer'] ?? '';
+        $model_id               = $value['model_id'] ?? '';
+        $u_third_company        = $value['u_third_company'] ?? '';
+        $dns_domain             = $value['dns_domain'] ?? '';
+        $u_delivery             = $value['u_delivery'] ?? '';
+        $used_for               = $value['used_for'] ?? '';
+        $u_obsolescence_date_hw = $value['u_obsolescence_date_hw'] ?? null;
+        $u_obsolescence_date_sw = $value['u_obsolescence_date_sw'] ?? null;
+        $u_os_model_id          = $value['u_os_model_id'] ?? '';
+        $sys_class_name         = $value['sys_class_name'] ?? '';
+        $sys_created_by         = $value['sys_created_by'] ?? '';
+        $company                = $value['company'] ?? '';
+        $comments               = $value['comments'] ?? '';
+        $u_category             = $value['u_category'] ?? '';
+        $managed_by             = $value['managed_by'] ?? '';
+        $support_group          = $value['support_group'] ?? '';
+        $owned_by               = $value['owned_by'] ?? '';
+        $location               = $value['location'] ?? '';
+        $u_created_date         = $value['u_created_date'] ?? null;
+        $sys_updated_on         = $value['sys_updated_on'] ?? null;
+        $sys_updated_by         = $value['sys_updated_by'] ?? '';
+        $mac_address            = $value['mac_address'] ?? '';
+        $ip_address             = $value['ip_address'] ?? '';
+        $u_adm_ip_address       = $value['u_adm_ip_address'] ?? '';
+        $fqdn                    = $value['fqdn'] ?? '';
 
-    public function exceuteBridge($token, $puente)
-    {
-        $data = $this->useBridge($token, $puente);
-
-        return $data;
+        // Llamar al procedimiento para insertar en tabla puente
+        $this->uploadCMDBData(
+            $asset_tag, $u_type_ref, $name, $assigned_to, $serial_number,
+            $u_status, $u_status_reason, $assignment_group, $manufacturer, $model_id,
+            $u_third_company, $dns_domain, $u_delivery, $used_for,
+            $u_obsolescence_date_hw, $u_obsolescence_date_sw, $u_os_model_id,
+            $sys_class_name, $sys_created_by, $company, $comments, $u_category,
+            $managed_by, $support_group, $owned_by, $location, $u_created_date,
+            $sys_updated_on, $sys_updated_by, $mac_address, $ip_address,
+            $u_adm_ip_address, $fqdn
+        );
     }
 
-    public function clearBridge($token, $orden)
-    {
-        $data = $this->cleanBridge($token, $orden);
-
-        return $data;
-    }
-
-    private function uploadData($number, $folio, $sys_created_on, $work_end, $closed_at, $closed_by, $assignment_group, $assigned_to, $state, $category, $subcategory, $u_short_description_call, $u_request_type, $short_description, $made_sla, $u_zone, $location, $caller_id, $sys_updated_by, $calendar_duration, $business_duration, $company, $description, $comments_and_work_notes, $opened_by, $resolved_by, $close_code, $parent_incident, $child_incidents, $sys_updated_on, $sys_created_by, $dateOrder)
-    {
-        $sql = "CALL stp_addCMDB('$number','$folio','$sys_created_on','$work_end','$closed_at','$closed_by','$assignment_group','$assigned_to','$state','$category','$subcategory','$u_short_description_call','$u_request_type','$short_description','$made_sla','$u_zone','$location','$caller_id','$sys_updated_by','$calendar_duration','$business_duration','$company','$description','$comments_and_work_notes','$opened_by','$resolved_by','$close_code','$parent_incident','$child_incidents','$sys_updated_on','$sys_created_by','$dateOrder')";
-        // print_r($sql);
-        // /*
-        $query = parent::getData($sql);
-
-        if (empty($query)) {
-            $result = array(
-                "code" => "204",
-                "mnj" => "Error al subir informacion layout incorrecto",
-                "data" => "",
-            );
-        } else {
-            $result = array(
-                "code" => "200",
-                "mnj" => "Datos Procesados",
-                "data" => $query
-            );
-        }
-
-        return $result;
-        // */
-    }
-
-
-    private function useBridge($tk, $p)
-    {
-        $sql = "CALL stp_addDBBridge('$tk', '$p')";
-        $query = parent::getData($sql);
-
-        if (empty($query)) {
-            $result = array(
-                "code" => "204",
-                "mnj" => "Error en la sincronizacion informacion archivo incorrecto",
-                "data" => "",
-            );
-        } else {
-            $result = array(
-                "code" => "200",
-                "mnj" => "Importacion correcta en base principal",
-                "data" => $query
-            );
-        }
-
-        return $result;
-    }
-
-    private function cleanBridge($tk)
-    {
-        $sql = "CALL stp_addDBBridgeClear('$tk')";
-        $query = parent::getData($sql);
-
-        if (empty($query)) {
-            $result = array(
-                "code" => "204",
-                "mnj" => "Falla del servidor",
-                "data" => "",
-            );
-        } else {
-            $result = array(
-                "code" => "200",
-                "mnj" => "Limpieza Terminada",
-                "data" => $query
-            );
-        }
-
-        return $result;
-    }
+    return [
+        "code" => "200",
+        "mnj" => "Datos CMDB procesados",
+        "data" => count($json) . " registros insertados en puente"
+    ];
 }
 
 
-/***Backend PHP*****/
+
+private function uploadCMDBData($asset_tag, $u_type_ref, $name, $assigned_to, $serial_number, $u_status,
+    $u_status_reason, $assignment_group, $manufacturer, $model_id, $u_third_company, $dns_domain, $u_delivery,
+    $used_for, $u_obsolescence_date_hw, $u_obsolescence_date_sw, $u_os_model_id, $sys_class_name, $sys_created_by,
+    $company, $comments, $u_category, $managed_by, $support_group, $owned_by, $location, $u_created_date,
+    $sys_updated_on, $sys_updated_by, $mac_address, $ip_address, $u_adm_ip_address, $fqdn)
+{
+    $sql = "CALL stp_addCMDB('$asset_tag','$u_type_ref','$name','$assigned_to','$serial_number',
+            '$u_status','$u_status_reason','$assignment_group','$manufacturer','$model_id',
+            '$u_third_company','$dns_domain','$u_delivery','$used_for',
+            '$u_obsolescence_date_hw','$u_obsolescence_date_sw','$u_os_model_id',
+            '$sys_class_name','$sys_created_by','$company','$comments','$u_category',
+            '$managed_by','$support_group','$owned_by','$location','$u_created_date',
+            '$sys_updated_on','$sys_updated_by','$mac_address','$ip_address','$u_adm_ip_address','$fqdn')";
+    $query = parent::getData($sql);
+
+    return [
+        "code" => "200",
+        "mnj" => "Datos Procesados",
+        "data" => $query
+    ];
+}
