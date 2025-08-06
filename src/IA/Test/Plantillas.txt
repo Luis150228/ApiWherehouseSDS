@@ -6,21 +6,21 @@ DETERMINISTIC
 BEGIN
     DECLARE resultado VARCHAR(255);
 
-    -- Extrae después de hostname/host name/host-name hasta salto de línea
+    -- Extrae todo desde hostname hasta fin de línea
     SET resultado = REGEXP_SUBSTR(
         texto,
-        '(?i)(hostname|host name|host-name)[[:space:]:-]*([^\r\n]+)',
-        1,
-        1,
-        '',
-        2
+        '(?i)(hostname|host name|host-name)[[:space:]:-]*[^[:space:]\r\n]+'
     );
 
-    -- Limpia espacios y dos puntos
-    SET resultado = TRIM(BOTH ' :' FROM resultado);
+    -- Quita la palabra "hostname"/variantes y deja solo el valor
+    IF resultado IS NOT NULL THEN
+        SET resultado = REGEXP_REPLACE(resultado, '(?i)(hostname|host name|host-name)[[:space:]:-]*', '');
+        SET resultado = TRIM(BOTH ' :' FROM resultado);
+    ELSE
+        SET resultado = 'SIN_DATOS';
+    END IF;
 
-    -- Si no hay resultado, regresa 'SIN_DATOS'
-    RETURN IFNULL(resultado, 'SIN_DATOS');
+    RETURN resultado;
 END$$
 
 DELIMITER ;
