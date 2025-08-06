@@ -127,7 +127,6 @@ BEGIN
             );
         ELSE
             -- Sin plantilla
-            /*
             INSERT INTO tmp_tabla_plantillas
             VALUES (
                 v_folio, v_incidencia_padre,
@@ -136,56 +135,9 @@ BEGIN
                 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
                 'SIN DATOS', 'SIN DATOS', v_origen
             );
-            */
+        END IF;
 
     END LOOP;
-
-    
-            /*Si no tiene plantilla quiero que haga este insert fuera del loop supongo, no se si con update en lugar del insert por que dentro del loop se corta la conexion con el servidor pero al ejecutar el select aparte se ejecuta rapidamente sin problema Error Code: 2013. Lost connection to MySQL server during query, sugiero que el loop solo se termine una vez que ajusto los folios con plantillas y a posterior ejecutar el insert*/
-            INSERT INTO tmp_tabla_plantillas
-			SELECT 
-				r.folio,
-				IF(r.incidencia_secundarias >= 1, r.folio, r.incidencia_principal),
-				IFNULL(w.usuario, 'SIN DATOS'),
-				r.abierto_por,
-				r.nombreproyecto,
-				'SIN DATOS',
-				IFNULL(l.num_movil, 'SIN DATOS'),
-				w.supervisor,
-				'SIN DATOS',
-				w.mail,
-				w.puesto,
-				RIGHT(w.cc_wd, 4),
-				REGEXP_REPLACE(w.region, '^Region[[:space:]]+', ''),
-				w.upn_wd AS UPN,
-				w.n_user AS usuario_n,
-				IFNULL(c.ip_address, 'SIN DATOS') AS IP,
-				IFNULL(c.name, 'SIN DATOS') AS hostname,
-				r.suc_corp AS tipo_usuario,
-				'SIN DATOS' AS descripcion_incidente,
-				'SIN DATOS' AS numero_afectados,
-				'SIN DATOS' AS carrier,
-				'SIN DATOS' AS IP_carrier,
-				r.origen
-			FROM eut_reportesbk.servicenow_reportes r
-			LEFT JOIN eut_toolmovil.eut_workday w 
-				ON r.abierto_por = w.nombre_full
-			LEFT JOIN eut_toolmovil.inventario_lineas l 
-				ON w.usuario = l.expediente
-			LEFT JOIN (
-				SELECT cm1.*
-				FROM eut_reportesbk.eut_cmdb_bridge cm1
-				INNER JOIN (
-					SELECT expediente, MAX(u_created_date) AS max_date
-					FROM eut_reportesbk.eut_cmdb
-					GROUP BY expediente
-				) cm2 ON cm1.expediente = cm2.expediente 
-					 AND cm1.u_created_date = cm2.max_date
-			) c ON w.usuario = c.expediente
-			WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
-			  AND r.origen = 'SNGlobal Incidentes'
-			  AND r.abierto >= '2025-07-01 00:00:00';
-        END IF;
 
     CLOSE cur;
 
