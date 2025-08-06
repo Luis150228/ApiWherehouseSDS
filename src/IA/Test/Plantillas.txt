@@ -1,27 +1,25 @@
 DELIMITER $$
 
-CREATE FUNCTION fn_extract_hostname(texto LONGTEXT)
-RETURNS VARCHAR(255)
+CREATE FUNCTION fn_extract_phone_from_celular(texto LONGTEXT)
+RETURNS VARCHAR(20)
 DETERMINISTIC
 BEGIN
-    DECLARE resultado VARCHAR(255);
+    DECLARE resultado VARCHAR(20);
 
-    -- Extrae todo desde hostname hasta fin de línea
+    -- Extrae desde "Celular" hasta el salto de línea
     SET resultado = REGEXP_SUBSTR(
         texto,
-        '(?i)(hostname\\??|host name|host-name)[[:space:]:?-]*[^[:space:]\r\n]+'
+        '(?i)Celular[:? ]*[0-9()+ -]+'
     );
 
-    -- Quita la palabra "hostname"/variantes y deja solo el valor
+    -- Limpia palabra "Celular" y caracteres no numéricos
     IF resultado IS NOT NULL THEN
-        SET resultado = REGEXP_REPLACE(resultado, '(?i)(hostname\\??|host name|host-name)[[:space:]:?-]*', '');
-        -- Limpia espacios y los caracteres ':' y '?'
-        SET resultado = TRIM(BOTH ' :?' FROM resultado);
-    ELSE
-        SET resultado = 'SIN_DATOS';
+        SET resultado = REGEXP_REPLACE(resultado, '(?i)Celular[:? ]*', '');
+        SET resultado = REGEXP_REPLACE(resultado, '[^0-9]', '');
     END IF;
 
-    RETURN resultado;
+    -- Si después de limpiar no queda nada, devolver 'SIN_DATOS'
+    RETURN IF(resultado IS NULL OR resultado = '', 'SIN_DATOS', resultado);
 END$$
 
 DELIMITER ;
