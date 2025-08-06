@@ -1,25 +1,203 @@
-DELIMITER $$
+Ok partiremos de cero usando MariaDB como experto en bases de datos, quiero optimizar este store procedure, ya que sera consumido por una API que as su vez le brindara datos a un FRONTEND para generar un grafico y descargar un xlsx por lo que la tabla temporal no es opcion ya que la consulta tiene un delay de 12 seg asi que ayudame a quitar este problema, recuerda usa solo comandos adminitidos por MariaDB y cuida el orden de la ejecucion 
 
-CREATE FUNCTION fn_extract_phone_from_celular(texto LONGTEXT)
-RETURNS VARCHAR(20)
-DETERMINISTIC
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all`()
 BEGIN
-    DECLARE resultado VARCHAR(20);
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE v_folio VARCHAR(20);
+    DECLARE v_texto LONGTEXT;
+    DECLARE v_bloque LONGTEXT;
+    DECLARE v_incidencia_principal VARCHAR(45);
+    DECLARE v_incidencia_secundarias INT;
+    DECLARE v_incidencia_padre VARCHAR(20);
+    DECLARE v_abierto_por VARCHAR(150);
+    DECLARE v_nombreproyecto tinytext;
+    DECLARE v_abierto DATETIME;
+    DECLARE v_status VARCHAR(50);
+    DECLARE v_origen VARCHAR(150);
 
-    -- Extrae desde "Celular" hasta el salto de línea
-    SET resultado = REGEXP_SUBSTR(
-        texto,
-        '(?i)Celular[:? ]*[0-9()+ -]+'
+    DECLARE cur CURSOR FOR
+        SELECT r.folio,
+               r.incidencia_principal,
+               r.abierto,
+               r.estatus,
+               r.incidencia_secundarias,
+               r.abierto_por,
+               r.nombreproyecto,
+               r.solicitante,
+               CASE
+                   WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
+                   WHEN r.obs_notasresolucion LIKE '%/**Generic BEGIN**/%' THEN r.obs_notasresolucion
+                   ELSE NULL
+               END AS texto
+        FROM eut_reportesbk.servicenow_reportes r
+        WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
+			AND origen = 'SNGlobal Incidentes'
+          AND r.abierto >= '2025-07-01 00:00:00';
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    DROP TEMPORARY TABLE IF EXISTS tmp_tabla_plantillas;
+    CREATE TEMPORARY TABLE tmp_tabla_plantillas (
+        folio VARCHAR(20),
+        incidencia_padre VARCHAR(20),
+        abierto DATETIME,
+        estatus VARCHAR(50),
+        expediente VARCHAR(30),
+        abierto_por VARCHAR(150),
+        nombreproyecto tinytext,
+        ext_contacto VARCHAR(100),
+        cel_contacto VARCHAR(100),
+        nombre2_contacto VARCHAR(200),
+        cel2_contacto VARCHAR(100),
+        mail VARCHAR(200),
+        puesto VARCHAR(200),
+        CC VARCHAR(50),
+        region VARCHAR(100),
+        UPN VARCHAR(150),
+        usuario_n VARCHAR(100),
+        IP VARCHAR(100),
+        hostname VARCHAR(150),
+        tipo_usuario VARCHAR(100),
+        descripcion_incidente VARCHAR(500),
+        numero_afectados VARCHAR(50),
+        carrier VARCHAR(100),
+        IP_carrier VARCHAR(100),
+        origen VARCHAR(150)
     );
+    
+    INSERT INTO tmp_tabla_plantillas
+			SELECT 
+				r.folio,
+				IF(r.incidencia_secundarias >= 1, r.folio, r.incidencia_principal),
+                r.abierto,
+                r.estatus,
+				IFNULL(w.usuario, 'SIN DATOS'),
+				r.abierto_por,
+				r.nombreproyecto,
+                fn_parse_ext(r.descripcion),
+                IFNULL(l.num_movil, fn_parse_movil(r.descripcion)),
+				UPPER(w.supervisor),
+				'SIN DATOS',
+				w.mail,
+				UPPER(w.puesto),
+				RIGHT(w.cc_wd, 4),
+				UPPER(REGEXP_REPLACE(w.region, '^Region[[:space:]]+', '')),
+				w.upn_wd,
+				UPPER(w.n_user),
+				IFNULL(c.ip_address, fn_parseIPdata(r.obs_notasresolucion)),
+                IFNULL(UPPER(c.name), fn_parse_hostname(r.obs_notasresolucion)),
+				UPPER(r.suc_corp),
+				'SIN DATOS' AS descripcion_incidente,
+				'SIN DATOS' AS numero_afectados,
+				'SIN DATOS' AS carrier,
+				'SIN DATOS' AS IP_carrier,
+				'EUT_SYSTEM' AS 'origen'
+			FROM eut_reportesbk.servicenow_reportes r
+			LEFT JOIN eut_toolmovil.eut_workday w 
+				ON r.abierto_por = w.nombre_full
+			LEFT JOIN eut_toolmovil.inventario_lineas l 
+				ON w.usuario = l.expediente
+			LEFT JOIN (
+				SELECT cm1.*
+				FROM eut_reportesbk.eut_cmdb_bridge cm1
+				INNER JOIN (
+					SELECT expediente, MAX(u_created_date) AS max_date
+					FROM eut_reportesbk.eut_cmdb_bridge
+					GROUP BY expediente
+				) cm2 ON cm1.expediente = cm2.expediente 
+					 AND cm1.u_created_date = cm2.max_date
+			) c ON w.usuario = c.expediente
+			WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
+			  AND r.origen = 'SNGlobal Incidentes'
+			  AND r.abierto >= '2025-07-01 00:00:00'
+              AND r.descripcion NOT LIKE '%**Generic %'
+              AND r.obs_notasresolucion NOT LIKE '%**Generic %';
+    OPEN cur;
 
-    -- Limpia palabra "Celular" y caracteres no numéricos
-    IF resultado IS NOT NULL THEN
-        SET resultado = REGEXP_REPLACE(resultado, '(?i)Celular[:? ]*', '');
-        SET resultado = REGEXP_REPLACE(resultado, '[^0-9]', '');
-    END IF;
+    read_loop: LOOP
+        FETCH cur INTO v_folio, v_incidencia_principal, v_abierto, v_status, v_incidencia_secundarias, v_abierto_por, v_nombreproyecto, v_origen, v_texto;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
 
-    -- Si después de limpiar no queda nada, devolver 'SIN_DATOS'
-    RETURN IF(resultado IS NULL OR resultado = '', 'SIN_DATOS', resultado);
-END$$
+        -- Determinar incidencia_padre
+        IF v_incidencia_secundarias >= 1 THEN
+            SET v_incidencia_padre = v_folio;
+        ELSEIF v_incidencia_principal IS NOT NULL AND v_incidencia_principal != '' THEN
+            SET v_incidencia_padre = v_incidencia_principal;
+        ELSE
+            SET v_incidencia_padre = 'SIN DATOS';
+        END IF;
 
-DELIMITER ;
+        -- Extraer bloque entre BEGIN y END
+        IF v_texto IS NOT NULL THEN
+            SET v_bloque = REGEXP_SUBSTR(v_texto, '/\\*\\*Generic BEGIN\\*\\*/([\\s\\S]*?)/\\*\\*Generic END\\*\\*/');
+        ELSE
+            SET v_bloque = NULL;
+        END IF;
+
+        IF v_bloque IS NOT NULL THEN
+            SET v_bloque = REPLACE(v_bloque, '/**Generic BEGIN**/', '');
+            SET v_bloque = REPLACE(v_bloque, '/**Generic END**/', '');
+            SET v_bloque = REGEXP_REPLACE(v_bloque, '[[:space:]]+', ' ');
+
+            -- Extracción de campos
+            -- SET @Expediente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&EXPEDIENTE:[^&\n]+'), '&EXPEDIENTE:', ''))),''),'SIN DATOS');
+			SET @Expediente = fn_parseItemGeneric(v_bloque, 'EXPEDIENTE');
+			SET @ext_contacto = fn_parseItemGeneric(v_bloque, 'EXT_CONTACTO');
+			SET @cel_contacto = fn_parseItemGeneric(v_bloque, 'CEL_CONTACTO');
+			SET @nombre2_contacto = fn_parseItemGeneric(v_bloque, 'NOMBRE2_CONTACTO');
+			SET @cel2_contacto = fn_parseItemGeneric(v_bloque, 'CEL2_CONTACTO');
+			SET @Puesto = fn_parseItemGeneric(v_bloque, 'PUESTO');
+			SET @CC = fn_parseItemGeneric(v_bloque, 'CC');
+			SET @Region = fn_parseItemGeneric(v_bloque, 'REGION');
+			SET @usuario_N = fn_parseItemGeneric(v_bloque, 'USUARIO_N');
+			SET @Hostname = fn_parseItemGeneric(v_bloque, 'HOSTNAME');
+			SET @Tipo_usuario = fn_parseItemGeneric(v_bloque, 'TIPO_USUARIO');
+			SET @Descripcion_incidente = fn_parseItemGeneric(v_bloque, 'DESCRIPCION_INCIDENTE');
+			SET @Correo = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', '')),''),'SIN DATOS');
+			SET @IP = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''),'SIN DATOS');
+			SET @UPN = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&UPN:[^&\n]+'), '&UPN:', '')),''),'SIN DATOS');
+            
+            -- Numero_afectados: solo números y guiones, espacios opcionales
+            SET @Numero_afectados = IFNULL(NULLIF(
+                UPPER(TRIM(
+                    REGEXP_REPLACE(
+                        REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'),
+                        '&NUMERO_AFECTADOS:[[:space:]]*', ''
+                    )
+                ))
+            ,''),'SIN DATOS');
+
+            SET @Carrier = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CARRIER:[^&\n]+'), '&CARRIER:', ''))),''),'SIN DATOS');
+            SET @IP_Carrier = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS');
+
+            -- Insertar fila tabulada
+            INSERT INTO tmp_tabla_plantillas
+            VALUES (
+                v_folio, v_incidencia_padre, v_abierto, v_status,
+                @Expediente, v_abierto_por, v_nombreproyecto, @ext_contacto, @cel_contacto, @nombre2_contacto, @cel2_contacto,
+                @Correo, @Puesto, @CC, @Region, @UPN, @usuario_N,
+                @IP, @Hostname, @Tipo_usuario, @Descripcion_incidente, @Numero_afectados,
+                @Carrier, @IP_Carrier, v_origen
+            );
+        -- ELSE
+            -- Sin plantilla
+            /*
+            INSERT INTO tmp_tabla_plantillas
+            VALUES (
+                v_folio, v_incidencia_padre,
+                'SIN DATOS', v_abierto_por, v_nombreproyecto, 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS', 'SIN DATOS',
+                'SIN DATOS', 'SIN DATOS', v_origen
+            );
+            */
+        END IF;
+
+    END LOOP;
+
+    CLOSE cur;
+
+    SELECT * FROM tmp_tabla_plantillas;
+END
