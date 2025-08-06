@@ -1,47 +1,53 @@
 CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all`()
 BEGIN
     SELECT 
-        r.folio,
+        data.folio,
         -- incidencia_padre
         CASE 
-            WHEN r.incidencia_secundarias >= 1 THEN r.folio
-            WHEN r.incidencia_principal IS NOT NULL AND r.incidencia_principal != '' THEN r.incidencia_principal
+            WHEN data.incidencia_secundarias >= 1 THEN data.folio
+            WHEN data.incidencia_principal IS NOT NULL AND data.incidencia_principal != '' THEN data.incidencia_principal
             ELSE 'SIN DATOS'
         END AS incidencia_padre,
-        r.abierto,
-        r.estatus,
+        data.abierto,
+        data.estatus,
         -- Expediente y datos parseados del bloque
-        fn_parseItemGeneric(v_bloque, 'EXPEDIENTE') AS expediente,
-        r.abierto_por,
-        r.nombreproyecto,
-        fn_parseItemGeneric(v_bloque, 'EXT_CONTACTO') AS ext_contacto,
-        fn_parseItemGeneric(v_bloque, 'CEL_CONTACTO') AS cel_contacto,
-        fn_parseItemGeneric(v_bloque, 'NOMBRE2_CONTACTO') AS nombre2_contacto,
-        fn_parseItemGeneric(v_bloque, 'CEL2_CONTACTO') AS cel2_contacto,
-        IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', '')),''),'SIN DATOS') AS mail,
-        fn_parseItemGeneric(v_bloque, 'PUESTO') AS puesto,
-        fn_parseItemGeneric(v_bloque, 'CC') AS CC,
-        fn_parseItemGeneric(v_bloque, 'REGION') AS region,
-        fn_parseItemGeneric(v_bloque, 'UPN') AS UPN,
-        fn_parseItemGeneric(v_bloque, 'USUARIO_N') AS usuario_n,
-        IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''),'SIN DATOS') AS IP,
-        fn_parseItemGeneric(v_bloque, 'HOSTNAME') AS hostname,
-        fn_parseItemGeneric(v_bloque, 'TIPO_USUARIO') AS tipo_usuario,
-        fn_parseItemGeneric(v_bloque, 'DESCRIPCION_INCIDENTE') AS descripcion_incidente,
+        fn_parseItemGeneric(data.v_bloque, 'EXPEDIENTE') AS expediente,
+        data.abierto_por,
+        data.nombreproyecto,
+        fn_parseItemGeneric(data.v_bloque, 'EXT_CONTACTO') AS ext_contacto,
+        fn_parseItemGeneric(data.v_bloque, 'CEL_CONTACTO') AS cel_contacto,
+        fn_parseItemGeneric(data.v_bloque, 'NOMBRE2_CONTACTO') AS nombre2_contacto,
+        fn_parseItemGeneric(data.v_bloque, 'CEL2_CONTACTO') AS cel2_contacto,
+        IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(data.v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', '')),''),'SIN DATOS') AS mail,
+        fn_parseItemGeneric(data.v_bloque, 'PUESTO') AS puesto,
+        fn_parseItemGeneric(data.v_bloque, 'CC') AS CC,
+        fn_parseItemGeneric(data.v_bloque, 'REGION') AS region,
+        fn_parseItemGeneric(data.v_bloque, 'UPN') AS UPN,
+        fn_parseItemGeneric(data.v_bloque, 'USUARIO_N') AS usuario_n,
+        IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(data.v_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''),'SIN DATOS') AS IP,
+        fn_parseItemGeneric(data.v_bloque, 'HOSTNAME') AS hostname,
+        fn_parseItemGeneric(data.v_bloque, 'TIPO_USUARIO') AS tipo_usuario,
+        fn_parseItemGeneric(data.v_bloque, 'DESCRIPCION_INCIDENTE') AS descripcion_incidente,
         IFNULL(NULLIF(
             UPPER(TRIM(
                 REGEXP_REPLACE(
-                    REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'),
+                    REGEXP_SUBSTR(data.v_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'),
                     '&NUMERO_AFECTADOS:[[:space:]]*', ''
                 )
             ))
         ,''),'SIN DATOS') AS numero_afectados,
-        fn_parseItemGeneric(v_bloque, 'CARRIER') AS carrier,
-        IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS') AS IP_carrier,
+        fn_parseItemGeneric(data.v_bloque, 'CARRIER') AS carrier,
+        IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(data.v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS') AS IP_carrier,
         'EUT_SYSTEM' AS origen
     FROM (
         SELECT 
-            r.*,
+            r.folio,
+            r.incidencia_principal,
+            r.incidencia_secundarias,
+            r.abierto,
+            r.estatus,
+            r.abierto_por,
+            r.nombreproyecto,
             -- extraer bloque BEGIN/END
             REGEXP_REPLACE(
                 REGEXP_REPLACE(
