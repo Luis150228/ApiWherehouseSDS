@@ -1,123 +1,26 @@
 DELIMITER $$
 
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all_unregex`()
+CREATE FUNCTION fn_extract_hostname(texto LONGTEXT)
+RETURNS VARCHAR(255)
+DETERMINISTIC
 BEGIN
+    DECLARE resultado VARCHAR(255);
 
-    -- ===========================
-    -- 1. Registros SIN plantilla
-    -- ===========================
-    SELECT 
-        r.folio,
-        IF(r.incidencia_secundarias >= 1, r.folio, r.incidencia_principal) AS incidencia_padre,
-        r.abierto,
-        r.estatus,
-        IFNULL(w.usuario, 'SIN DATOS') AS expediente,
-        r.abierto_por,
-        r.nombreproyecto,
-        'SIN DATOS' AS ext_contacto,
-        IFNULL(l.num_movil, 'SIN DATOS') AS cel_contacto,
-        UPPER(w.supervisor) AS nombre2_contacto,
-        'SIN DATOS' AS cel2_contacto,
-        w.mail,
-        UPPER(w.puesto) AS puesto,
-        RIGHT(w.cc_wd, 4) AS CC,
-        UPPER(REPLACE(w.region, 'Region ', '')) AS region,
-        w.upn_wd AS UPN,
-        UPPER(w.n_user) AS usuario_n,
-        IFNULL(c.ip_address, 'SIN DATOS') AS IP,
-        IFNULL(UPPER(c.name), 'SIN DATOS') AS hostname,
-        UPPER(r.suc_corp) AS tipo_usuario,
-        'SIN DATOS' AS descripcion_incidente,
-        'SIN DATOS' AS numero_afectados,
-        'SIN DATOS' AS carrier,
-        'SIN DATOS' AS IP_carrier,
-        'EUT_SYSTEM' AS origen
-    FROM eut_reportesbk.servicenow_reportes r
-    LEFT JOIN eut_toolmovil.eut_workday w 
-        ON r.abierto_por = w.nombre_full
-    LEFT JOIN eut_toolmovil.inventario_lineas l 
-        ON w.usuario = l.expediente
-    LEFT JOIN (
-        SELECT cm1.*
-        FROM eut_reportesbk.eut_cmdb_bridge cm1
-        INNER JOIN (
-            SELECT expediente, MAX(u_created_date) AS max_date
-            FROM eut_reportesbk.eut_cmdb_bridge
-            GROUP BY expediente
-        ) cm2 ON cm1.expediente = cm2.expediente 
-             AND cm1.u_created_date = cm2.max_date
-    ) c ON w.usuario = c.expediente
-    WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
-      AND r.origen = 'SNGlobal Incidentes'
-      AND r.abierto >= '2025-07-01 00:00:00'
-      AND r.descripcion NOT LIKE '%/**Generic BEGIN**/%'
-      AND r.obs_notasresolucion NOT LIKE '%/**Generic BEGIN**/%'
+    -- Extrae después de hostname/host name/host-name hasta salto de línea
+    SET resultado = REGEXP_SUBSTR(
+        texto,
+        '(?i)(hostname|host name|host-name)[[:space:]:-]*([^\r\n]+)',
+        1,
+        1,
+        '',
+        2
+    );
 
-    UNION ALL
+    -- Limpia espacios y dos puntos
+    SET resultado = TRIM(BOTH ' :' FROM resultado);
 
-    -- ===========================
-    -- 2. Registros CON plantilla
-    -- ===========================
-    SELECT
-        r.folio,
-        IF(r.incidencia_secundarias >= 1, r.folio, r.incidencia_principal) AS incidencia_padre,
-        r.abierto,
-        r.estatus,
-        -- Ahora parseamos en base a SUBSTRING_INDEX sobre bloque_limpio
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&EXPEDIENTE:', -1), '&', 1))), ''), 'SIN DATOS') AS expediente,
-        r.abierto_por,
-        r.nombreproyecto,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&EXT_CONTACTO:', -1), '&', 1))), ''), 'SIN DATOS') AS ext_contacto,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&CEL_CONTACTO:', -1), '&', 1))), ''), 'SIN DATOS') AS cel_contacto,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&NOMBRE2_CONTACTO:', -1), '&', 1))), ''), 'SIN DATOS') AS nombre2_contacto,
-        'SIN DATOS' AS cel2_contacto,
-        IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&CORREO:', -1), '&', 1)), ''), 'SIN DATOS') AS mail,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&PUESTO:', -1), '&', 1))), ''), 'SIN DATOS') AS puesto,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&CC:', -1), '&', 1))), ''), 'SIN DATOS') AS CC,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&REGION:', -1), '&', 1))), ''), 'SIN DATOS') AS region,
-        IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&UPN:', -1), '&', 1)), ''), 'SIN DATOS') AS UPN,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&USUARIO_N:', -1), '&', 1))), ''), 'SIN DATOS') AS usuario_n,
-        IFNULL(NULLIF(REPLACE(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&IP:', -1), '&', 1))),' ',''),''),'SIN DATOS') AS IP,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&HOSTNAME:', -1), '&', 1))),''),'SIN DATOS') AS hostname,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&TIPO_USUARIO:', -1), '&', 1))),''),'SIN DATOS') AS tipo_usuario,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&DESCRIPCION_INCIDENTE:', -1), '&', 1))),''),'SIN DATOS') AS descripcion_incidente,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&NUMERO_AFECTADOS:', -1), '&', 1))),''),'SIN DATOS') AS numero_afectados,
-        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&CARRIER:', -1), '&', 1))),''),'SIN DATOS') AS carrier,
-        IFNULL(NULLIF(REPLACE(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&IP DEL CARRIER:', -1), '&', 1))),' ',''),''),'SIN DATOS') AS IP_carrier,
-        'EUT_SYSTEM' AS origen
-    FROM (
-        SELECT 
-            r.*,
-            -- Extraer bloque una sola vez usando LOCATE y SUBSTRING
-            TRIM(
-                SUBSTRING(
-                    CASE 
-                        WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
-                        ELSE r.obs_notasresolucion
-                    END,
-                    LOCATE('/**Generic BEGIN**/', CASE 
-                        WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
-                        ELSE r.obs_notasresolucion
-                    END) + LENGTH('/**Generic BEGIN**/'),
-                    LOCATE('/**Generic END**/', CASE 
-                        WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
-                        ELSE r.obs_notasresolucion
-                    END) - LOCATE('/**Generic BEGIN**/', CASE 
-                        WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
-                        ELSE r.obs_notasresolucion
-                    END) - LENGTH('/**Generic BEGIN**/')
-                )
-            ) AS bloque_limpio
-        FROM eut_reportesbk.servicenow_reportes r
-        WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
-          AND r.origen = 'SNGlobal Incidentes'
-          AND r.abierto >= '2025-07-01 00:00:00'
-          AND (
-               r.descripcion LIKE '%/**Generic BEGIN**/%'
-               OR r.obs_notasresolucion LIKE '%/**Generic BEGIN**/%'
-          )
-    ) AS sub;
-
+    -- Si no hay resultado, regresa 'SIN_DATOS'
+    RETURN IFNULL(resultado, 'SIN_DATOS');
 END$$
 
 DELIMITER ;
