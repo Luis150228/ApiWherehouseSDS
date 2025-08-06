@@ -1,4 +1,4 @@
-quiero esta misma funcion pero que yo le pase un numero de folio y busque el incidente padre e hijos, no muevas nada mas
+Esta es el procedimiento que deberiamos ajustar para que no cree la tabla dinamica supongo que tendremos que hacer algun UNION ALL o algo similar, respetando la logica de extraer primero los folios que no tienen plantilla, y despues el loop para los que si la tienen, recuerda actuar como un experto en database y mariaDB
 
 CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all`()
 BEGIN
@@ -11,11 +11,15 @@ BEGIN
     DECLARE v_incidencia_padre VARCHAR(20);
     DECLARE v_abierto_por VARCHAR(150);
     DECLARE v_nombreproyecto tinytext;
+    DECLARE v_abierto DATETIME;
+    DECLARE v_status VARCHAR(50);
     DECLARE v_origen VARCHAR(150);
 
     DECLARE cur CURSOR FOR
         SELECT r.folio,
                r.incidencia_principal,
+               r.abierto,
+               r.estatus,
                r.incidencia_secundarias,
                r.abierto_por,
                r.nombreproyecto,
@@ -36,6 +40,8 @@ BEGIN
     CREATE TEMPORARY TABLE tmp_tabla_plantillas (
         folio VARCHAR(20),
         incidencia_padre VARCHAR(20),
+        abierto DATETIME,
+        estatus VARCHAR(50),
         expediente VARCHAR(30),
         abierto_por VARCHAR(150),
         nombreproyecto tinytext,
@@ -63,6 +69,8 @@ BEGIN
 			SELECT 
 				r.folio,
 				IF(r.incidencia_secundarias >= 1, r.folio, r.incidencia_principal),
+                r.abierto,
+                r.estatus,
 				IFNULL(w.usuario, 'SIN DATOS'),
 				r.abierto_por,
 				r.nombreproyecto,
@@ -107,7 +115,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_folio, v_incidencia_principal, v_incidencia_secundarias, v_abierto_por, v_nombreproyecto, v_origen, v_texto;
+        FETCH cur INTO v_folio, v_incidencia_principal, v_abierto, v_status, v_incidencia_secundarias, v_abierto_por, v_nombreproyecto, v_origen, v_texto;
         IF done THEN
             LEAVE read_loop;
         END IF;
@@ -149,7 +157,7 @@ BEGIN
             SET @Hostname = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:[^&\n]+'), '&HOSTNAME:', ''))),''),'SIN DATOS');
             SET @Tipo_usuario = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&TIPO_USUARIO:[^&\n]+'), '&TIPO_USUARIO:', ''))),''),'SIN DATOS');
             SET @Descripcion_incidente = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&DESCRIPCION_INCIDENTE:[^&\n]+'), '&DESCRIPCION_INCIDENTE:', ''))),''),'SIN DATOS');
-
+            
             -- Numero_afectados: solo números y guiones, espacios opcionales
             SET @Numero_afectados = IFNULL(NULLIF(
                 UPPER(TRIM(
@@ -166,7 +174,7 @@ BEGIN
             -- Insertar fila tabulada
             INSERT INTO tmp_tabla_plantillas
             VALUES (
-                v_folio, v_incidencia_padre,
+                v_folio, v_incidencia_padre, v_abierto, v_status,
                 @Expediente, v_abierto_por, v_nombreproyecto, @ext_contacto, @cel_contacto, @nombre2_contacto, @cel2_contacto,
                 @Correo, @Puesto, @CC, @Region, @UPN, @usuario_N,
                 @IP, @Hostname, @Tipo_usuario, @Descripcion_incidente, @Numero_afectados,
