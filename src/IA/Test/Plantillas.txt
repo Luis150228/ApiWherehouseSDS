@@ -1,5 +1,3 @@
-DELIMITER $$
-
 CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all`()
 BEGIN
     SELECT 
@@ -11,65 +9,68 @@ BEGIN
         END AS incidencia_padre,
         r.abierto,
         r.estatus,
-        fn_parseItemGeneric(v_bloque, 'EXPEDIENTE') AS expediente,
+        /* Extraído de bloque GENERIC si existe, si no usa valores por defecto */
+        IFNULL(fn_parseItemGeneric(b.bloque, 'EXPEDIENTE'), IFNULL(w.usuario, 'SIN DATOS')) AS expediente,
         r.abierto_por,
         r.nombreproyecto,
-        fn_parseItemGeneric(v_bloque, 'EXT_CONTACTO') AS ext_contacto,
-        fn_parseItemGeneric(v_bloque, 'CEL_CONTACTO') AS cel_contacto,
-        fn_parseItemGeneric(v_bloque, 'NOMBRE2_CONTACTO') AS nombre2_contacto,
-        fn_parseItemGeneric(v_bloque, 'CEL2_CONTACTO') AS cel2_contacto,
-        IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', '')),''),'SIN DATOS') AS mail,
-        fn_parseItemGeneric(v_bloque, 'PUESTO') AS puesto,
-        fn_parseItemGeneric(v_bloque, 'CC') AS CC,
-        fn_parseItemGeneric(v_bloque, 'REGION') AS region,
-        fn_parseItemGeneric(v_bloque, 'UPN') AS UPN,
-        fn_parseItemGeneric(v_bloque, 'USUARIO_N') AS usuario_n,
-        IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''),'SIN DATOS') AS IP,
-        fn_parseItemGeneric(v_bloque, 'HOSTNAME') AS hostname,
-        fn_parseItemGeneric(v_bloque, 'TIPO_USUARIO') AS tipo_usuario,
-        fn_parseItemGeneric(v_bloque, 'DESCRIPCION_INCIDENTE') AS descripcion_incidente,
-        IFNULL(NULLIF(
-            UPPER(TRIM(
-                REGEXP_REPLACE(
-                    REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'),
-                    '&NUMERO_AFECTADOS:[[:space:]]*', ''
-                )
-            ))
-        ,''),'SIN DATOS') AS numero_afectados,
-        fn_parseItemGeneric(v_bloque, 'CARRIER') AS carrier,
-        IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS') AS IP_carrier,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'EXT_CONTACTO'), fn_parse_ext(r.descripcion)) AS ext_contacto,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'CEL_CONTACTO'), IFNULL(l.num_movil, fn_parse_movil(r.descripcion))) AS cel_contacto,
+        fn_parseItemGeneric(b.bloque, 'NOMBRE2_CONTACTO') AS nombre2_contacto,
+        fn_parseItemGeneric(b.bloque, 'CEL2_CONTACTO') AS cel2_contacto,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'CORREO'), w.mail, 'SIN DATOS') AS mail,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'PUESTO'), UPPER(w.puesto), 'SIN DATOS') AS puesto,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'CC'), RIGHT(w.cc_wd, 4)) AS CC,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'REGION'), UPPER(REGEXP_REPLACE(w.region, '^Region[[:space:]]+', ''))) AS region,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'UPN'), w.upn_wd) AS UPN,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'USUARIO_N'), UPPER(w.n_user)) AS usuario_n,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'IP'), IFNULL(c.ip_address, fn_parseIPdata(r.obs_notasresolucion))) AS IP,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'HOSTNAME'), IFNULL(UPPER(c.name), fn_parse_hostname(r.obs_notasresolucion))) AS hostname,
+        COALESCE(fn_parseItemGeneric(b.bloque, 'TIPO_USUARIO'), UPPER(r.suc_corp)) AS tipo_usuario,
+        fn_parseItemGeneric(b.bloque, 'DESCRIPCION_INCIDENTE') AS descripcion_incidente,
+        fn_parseItemGeneric(b.bloque, 'NUMERO_AFECTADOS') AS numero_afectados,
+        fn_parseItemGeneric(b.bloque, 'CARRIER') AS carrier,
+        fn_parseItemGeneric(b.bloque, 'IP DEL CARRIER') AS IP_carrier,
         'EUT_SYSTEM' AS origen
-    FROM (
+    FROM eut_reportesbk.servicenow_reportes r
+    LEFT JOIN eut_toolmovil.eut_workday w 
+        ON r.abierto_por = w.nombre_full
+    LEFT JOIN eut_toolmovil.inventario_lineas l 
+        ON w.usuario = l.expediente
+    LEFT JOIN (
+        SELECT cm1.*
+        FROM eut_reportesbk.eut_cmdb_bridge cm1
+        INNER JOIN (
+            SELECT expediente, MAX(u_created_date) AS max_date
+            FROM eut_reportesbk.eut_cmdb_bridge
+            GROUP BY expediente
+        ) cm2 ON cm1.expediente = cm2.expediente 
+               AND cm1.u_created_date = cm2.max_date
+    ) c ON w.usuario = c.expediente
+    LEFT JOIN (
+        /* Extraemos solo los bloques GENERIC para procesarlos */
         SELECT 
-            r.folio,
-            r.incidencia_principal,
-            r.incidencia_secundarias,
-            r.abierto,
-            r.estatus,
-            r.abierto_por,
-            r.nombreproyecto,
-            r.origen,
+            folio,
             REGEXP_REPLACE(
                 REGEXP_REPLACE(
                     REGEXP_SUBSTR(
                         CASE
-                            WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
-                            WHEN r.obs_notasresolucion LIKE '%/**Generic BEGIN**/%' THEN r.obs_notasresolucion
-                            ELSE NULL
+                            WHEN descripcion LIKE '%/**Generic BEGIN**/%' THEN descripcion
+                            WHEN obs_notasresolucion LIKE '%/**Generic BEGIN**/%' THEN obs_notasresolucion
                         END,
                         '/\\*\\*Generic BEGIN\\*\\*/([\\s\\S]*?)/\\*\\*Generic END\\*\\*/'
                     ),
                     '/\\*\\*Generic BEGIN\\*\\*/', ''
                 ),
                 '/\\*\\*Generic END\\*\\*/', ''
-            ) AS v_bloque
-        FROM eut_reportesbk.servicenow_reportes r
-        WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
-          AND r.origen = 'SNGlobal Incidentes'
-          AND r.abierto >= '2025-07-01 00:00:00'
-          AND r.descripcion NOT LIKE '%**Generic %'
-          AND r.obs_notasresolucion NOT LIKE '%**Generic %'
-    ) AS r;
-END$$
-
-DELIMITER ;
+            ) AS bloque
+        FROM eut_reportesbk.servicenow_reportes
+        WHERE (incidencia_principal != '' OR incidencia_secundarias >= 1)
+          AND origen = 'SNGlobal Incidentes'
+          AND abierto >= '2025-07-01 00:00:00'
+    ) b ON r.folio = b.folio
+    WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
+      AND r.origen = 'SNGlobal Incidentes'
+      AND r.abierto >= '2025-07-01 00:00:00'
+      AND r.descripcion NOT LIKE '%**Generic %'
+      AND r.obs_notasresolucion NOT LIKE '%**Generic %';
+END;
