@@ -1,76 +1,9 @@
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all`()
-BEGIN
-    SELECT 
-        r.folio,
-        CASE 
-            WHEN r.incidencia_secundarias >= 1 THEN r.folio
-            WHEN r.incidencia_principal IS NOT NULL AND r.incidencia_principal != '' THEN r.incidencia_principal
-            ELSE 'SIN DATOS'
-        END AS incidencia_padre,
-        r.abierto,
-        r.estatus,
-        /* Extraído de bloque GENERIC si existe, si no usa valores por defecto */
-        IFNULL(fn_parseItemGeneric(b.bloque, 'EXPEDIENTE'), IFNULL(w.usuario, 'SIN DATOS')) AS expediente,
-        r.abierto_por,
-        r.nombreproyecto,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'EXT_CONTACTO'), fn_parse_ext(r.descripcion)) AS ext_contacto,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'CEL_CONTACTO'), IFNULL(l.num_movil, fn_parse_movil(r.descripcion))) AS cel_contacto,
-        fn_parseItemGeneric(b.bloque, 'NOMBRE2_CONTACTO') AS nombre2_contacto,
-        fn_parseItemGeneric(b.bloque, 'CEL2_CONTACTO') AS cel2_contacto,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'CORREO'), w.mail, 'SIN DATOS') AS mail,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'PUESTO'), UPPER(w.puesto), 'SIN DATOS') AS puesto,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'CC'), RIGHT(w.cc_wd, 4)) AS CC,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'REGION'), UPPER(REGEXP_REPLACE(w.region, '^Region[[:space:]]+', ''))) AS region,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'UPN'), w.upn_wd) AS UPN,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'USUARIO_N'), UPPER(w.n_user)) AS usuario_n,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'IP'), IFNULL(c.ip_address, fn_parseIPdata(r.obs_notasresolucion))) AS IP,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'HOSTNAME'), IFNULL(UPPER(c.name), fn_parse_hostname(r.obs_notasresolucion))) AS hostname,
-        COALESCE(fn_parseItemGeneric(b.bloque, 'TIPO_USUARIO'), UPPER(r.suc_corp)) AS tipo_usuario,
-        fn_parseItemGeneric(b.bloque, 'DESCRIPCION_INCIDENTE') AS descripcion_incidente,
-        fn_parseItemGeneric(b.bloque, 'NUMERO_AFECTADOS') AS numero_afectados,
-        fn_parseItemGeneric(b.bloque, 'CARRIER') AS carrier,
-        fn_parseItemGeneric(b.bloque, 'IP DEL CARRIER') AS IP_carrier,
-        'EUT_SYSTEM' AS origen
-    FROM eut_reportesbk.servicenow_reportes r
-    LEFT JOIN eut_toolmovil.eut_workday w 
-        ON r.abierto_por = w.nombre_full
-    LEFT JOIN eut_toolmovil.inventario_lineas l 
-        ON w.usuario = l.expediente
-    LEFT JOIN (
-        SELECT cm1.*
-        FROM eut_reportesbk.eut_cmdb_bridge cm1
-        INNER JOIN (
-            SELECT expediente, MAX(u_created_date) AS max_date
-            FROM eut_reportesbk.eut_cmdb_bridge
-            GROUP BY expediente
-        ) cm2 ON cm1.expediente = cm2.expediente 
-               AND cm1.u_created_date = cm2.max_date
-    ) c ON w.usuario = c.expediente
-    LEFT JOIN (
-        /* Extraemos solo los bloques GENERIC para procesarlos */
-        SELECT 
-            folio,
-            REGEXP_REPLACE(
-                REGEXP_REPLACE(
-                    REGEXP_SUBSTR(
-                        CASE
-                            WHEN descripcion LIKE '%/**Generic BEGIN**/%' THEN descripcion
-                            WHEN obs_notasresolucion LIKE '%/**Generic BEGIN**/%' THEN obs_notasresolucion
-                        END,
-                        '/\\*\\*Generic BEGIN\\*\\*/([\\s\\S]*?)/\\*\\*Generic END\\*\\*/'
-                    ),
-                    '/\\*\\*Generic BEGIN\\*\\*/', ''
-                ),
-                '/\\*\\*Generic END\\*\\*/', ''
-            ) AS bloque
-        FROM eut_reportesbk.servicenow_reportes
-        WHERE (incidencia_principal != '' OR incidencia_secundarias >= 1)
-          AND origen = 'SNGlobal Incidentes'
-          AND abierto >= '2025-07-01 00:00:00'
-    ) b ON r.folio = b.folio
-    WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
-      AND r.origen = 'SNGlobal Incidentes'
-      AND r.abierto >= '2025-07-01 00:00:00'
-      AND r.descripcion NOT LIKE '%**Generic %'
-      AND r.obs_notasresolucion NOT LIKE '%**Generic %';
-END;
+SELECT 
+    REGEXP_SUBSTR(campo_texto, '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}') AS correo_extraido
+FROM 
+    tabla;
+
+SELECT 
+    REGEXP_SUBSTR(campo_texto, '\\b[0-9]{3,5}\\b') AS ceco
+FROM 
+    tabla;
