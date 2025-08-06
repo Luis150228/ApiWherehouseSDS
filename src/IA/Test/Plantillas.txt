@@ -3,41 +3,41 @@ DELIMITER $$
 CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all`()
 BEGIN
     SELECT 
-        t.folio,
+        r.folio,
         CASE 
-            WHEN t.incidencia_secundarias >= 1 THEN t.folio
-            WHEN t.incidencia_principal IS NOT NULL AND t.incidencia_principal != '' THEN t.incidencia_principal
+            WHEN r.incidencia_secundarias >= 1 THEN r.folio
+            WHEN r.incidencia_principal IS NOT NULL AND r.incidencia_principal != '' THEN r.incidencia_principal
             ELSE 'SIN DATOS'
         END AS incidencia_padre,
-        t.abierto,
-        t.estatus,
-        fn_parseItemGeneric(t.v_bloque, 'EXPEDIENTE') AS expediente,
-        t.abierto_por,
-        t.nombreproyecto,
-        fn_parseItemGeneric(t.v_bloque, 'EXT_CONTACTO') AS ext_contacto,
-        fn_parseItemGeneric(t.v_bloque, 'CEL_CONTACTO') AS cel_contacto,
-        fn_parseItemGeneric(t.v_bloque, 'NOMBRE2_CONTACTO') AS nombre2_contacto,
-        fn_parseItemGeneric(t.v_bloque, 'CEL2_CONTACTO') AS cel2_contacto,
-        IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(t.v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', '')),''),'SIN DATOS') AS mail,
-        fn_parseItemGeneric(t.v_bloque, 'PUESTO') AS puesto,
-        fn_parseItemGeneric(t.v_bloque, 'CC') AS CC,
-        fn_parseItemGeneric(t.v_bloque, 'REGION') AS region,
-        fn_parseItemGeneric(t.v_bloque, 'UPN') AS UPN,
-        fn_parseItemGeneric(t.v_bloque, 'USUARIO_N') AS usuario_n,
-        IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(t.v_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''),'SIN DATOS') AS IP,
-        fn_parseItemGeneric(t.v_bloque, 'HOSTNAME') AS hostname,
-        fn_parseItemGeneric(t.v_bloque, 'TIPO_USUARIO') AS tipo_usuario,
-        fn_parseItemGeneric(t.v_bloque, 'DESCRIPCION_INCIDENTE') AS descripcion_incidente,
+        r.abierto,
+        r.estatus,
+        fn_parseItemGeneric(v_bloque, 'EXPEDIENTE') AS expediente,
+        r.abierto_por,
+        r.nombreproyecto,
+        fn_parseItemGeneric(v_bloque, 'EXT_CONTACTO') AS ext_contacto,
+        fn_parseItemGeneric(v_bloque, 'CEL_CONTACTO') AS cel_contacto,
+        fn_parseItemGeneric(v_bloque, 'NOMBRE2_CONTACTO') AS nombre2_contacto,
+        fn_parseItemGeneric(v_bloque, 'CEL2_CONTACTO') AS cel2_contacto,
+        IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', '')),''),'SIN DATOS') AS mail,
+        fn_parseItemGeneric(v_bloque, 'PUESTO') AS puesto,
+        fn_parseItemGeneric(v_bloque, 'CC') AS CC,
+        fn_parseItemGeneric(v_bloque, 'REGION') AS region,
+        fn_parseItemGeneric(v_bloque, 'UPN') AS UPN,
+        fn_parseItemGeneric(v_bloque, 'USUARIO_N') AS usuario_n,
+        IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''),'SIN DATOS') AS IP,
+        fn_parseItemGeneric(v_bloque, 'HOSTNAME') AS hostname,
+        fn_parseItemGeneric(v_bloque, 'TIPO_USUARIO') AS tipo_usuario,
+        fn_parseItemGeneric(v_bloque, 'DESCRIPCION_INCIDENTE') AS descripcion_incidente,
         IFNULL(NULLIF(
             UPPER(TRIM(
                 REGEXP_REPLACE(
-                    REGEXP_SUBSTR(t.v_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'),
+                    REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'),
                     '&NUMERO_AFECTADOS:[[:space:]]*', ''
                 )
             ))
         ,''),'SIN DATOS') AS numero_afectados,
-        fn_parseItemGeneric(t.v_bloque, 'CARRIER') AS carrier,
-        IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(t.v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS') AS IP_carrier,
+        fn_parseItemGeneric(v_bloque, 'CARRIER') AS carrier,
+        IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS') AS IP_carrier,
         'EUT_SYSTEM' AS origen
     FROM (
         SELECT 
@@ -48,6 +48,7 @@ BEGIN
             r.estatus,
             r.abierto_por,
             r.nombreproyecto,
+            r.origen,
             REGEXP_REPLACE(
                 REGEXP_REPLACE(
                     REGEXP_SUBSTR(
@@ -68,7 +69,7 @@ BEGIN
           AND r.abierto >= '2025-07-01 00:00:00'
           AND r.descripcion NOT LIKE '%**Generic %'
           AND r.obs_notasresolucion NOT LIKE '%**Generic %'
-    ) t;
+    ) AS r;
 END$$
 
 DELIMITER ;
