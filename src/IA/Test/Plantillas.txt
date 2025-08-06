@@ -2,7 +2,7 @@ DELIMITER $$
 
 CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all`()
 BEGIN
-    -- Variables
+    -- 1. Declaración de variables
     DECLARE done INT DEFAULT FALSE;
     DECLARE v_folio VARCHAR(20);
     DECLARE v_texto LONGTEXT;
@@ -34,10 +34,7 @@ BEGIN
     DECLARE v_carrier VARCHAR(100);
     DECLARE v_ip_carrier VARCHAR(100);
 
-    -- Handler antes del cursor
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-
-    -- Cursor
+    -- 2. Declaración de cursor
     DECLARE cur CURSOR FOR
         SELECT r.folio,
                r.incidencia_principal,
@@ -55,7 +52,10 @@ BEGIN
           AND origen = 'SNGlobal Incidentes'
           AND r.abierto >= '2025-07-01 00:00:00';
 
-    -- Crear tabla temporal
+    -- 3. Declaración del handler
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    -- 4. Crear tabla temporal
     DROP TEMPORARY TABLE IF EXISTS tmp_tabla_plantillas;
     CREATE TEMPORARY TABLE tmp_tabla_plantillas (
         folio VARCHAR(20),
@@ -83,6 +83,7 @@ BEGIN
         origen VARCHAR(150)
     );
 
+    -- 5. Lógica del cursor
     OPEN cur;
 
     read_loop: LOOP
