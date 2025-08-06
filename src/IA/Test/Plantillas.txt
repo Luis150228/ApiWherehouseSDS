@@ -1,67 +1,11 @@
 DELIMITER $$
 
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all_untemporal`()
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_all_unregex`()
 BEGIN
-    DECLARE done INT DEFAULT FALSE;
-    DECLARE v_folio VARCHAR(20);
-    DECLARE v_texto LONGTEXT;
-    DECLARE v_bloque LONGTEXT;
-    DECLARE v_incidencia_principal VARCHAR(45);
-    DECLARE v_incidencia_secundarias INT;
-    DECLARE v_incidencia_padre VARCHAR(20);
-    DECLARE v_abierto_por VARCHAR(150);
-    DECLARE v_nombreproyecto tinytext;
-    DECLARE v_abierto DATETIME;
-    DECLARE v_status VARCHAR(50);
-    DECLARE v_origen VARCHAR(150);
 
-    -- Variables para salida del bloque parseado
-    DECLARE expediente_out VARCHAR(30);
-    DECLARE ext_contacto_out VARCHAR(100);
-    DECLARE cel_contacto_out VARCHAR(100);
-    DECLARE nombre2_contacto_out VARCHAR(200);
-    DECLARE cel2_contacto_out VARCHAR(100);
-    DECLARE correo_out VARCHAR(200);
-    DECLARE puesto_out VARCHAR(200);
-    DECLARE cc_out VARCHAR(50);
-    DECLARE region_out VARCHAR(100);
-    DECLARE upn_out VARCHAR(150);
-    DECLARE usuario_n_out VARCHAR(100);
-    DECLARE ip_out VARCHAR(100);
-    DECLARE hostname_out VARCHAR(150);
-    DECLARE tipo_usuario_out VARCHAR(100);
-    DECLARE descripcion_incidente_out VARCHAR(500);
-    DECLARE numero_afectados_out VARCHAR(50);
-    DECLARE carrier_out VARCHAR(100);
-    DECLARE ip_carrier_out VARCHAR(100);
-
-    -- Cursor para los que SÍ tienen plantilla
-    DECLARE cur CURSOR FOR
-        SELECT r.folio,
-               r.incidencia_principal,
-               r.abierto,
-               r.estatus,
-               r.incidencia_secundarias,
-               r.abierto_por,
-               r.nombreproyecto,
-               r.origen,
-               CASE
-                   WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
-                   WHEN r.obs_notasresolucion LIKE '%/**Generic BEGIN**/%' THEN r.obs_notasresolucion
-                   ELSE NULL
-               END AS texto
-        FROM eut_reportesbk.servicenow_reportes r
-        WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
-          AND r.origen = 'SNGlobal Incidentes'
-          AND r.abierto >= '2025-07-01 00:00:00'
-          AND (
-               r.descripcion LIKE '%/**Generic BEGIN**/%'
-               OR r.obs_notasresolucion LIKE '%/**Generic BEGIN**/%'
-          );
-
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-
-    -- 1. Primero devolvemos registros SIN plantilla
+    -- ===========================
+    -- 1. Registros SIN plantilla
+    -- ===========================
     SELECT 
         r.folio,
         IF(r.incidencia_secundarias >= 1, r.folio, r.incidencia_principal) AS incidencia_padre,
@@ -77,7 +21,7 @@ BEGIN
         w.mail,
         UPPER(w.puesto) AS puesto,
         RIGHT(w.cc_wd, 4) AS CC,
-        UPPER(REGEXP_REPLACE(w.region, '^Region[[:space:]]+', '')) AS region,
+        UPPER(REPLACE(w.region, 'Region ', '')) AS region,
         w.upn_wd AS UPN,
         UPPER(w.n_user) AS usuario_n,
         IFNULL(c.ip_address, 'SIN DATOS') AS IP,
@@ -111,86 +55,68 @@ BEGIN
 
     UNION ALL
 
-    -- 2. Ahora procesamos los que SÍ tienen plantilla
-    (
-      -- Usamos un bloque dinámico: el cursor construirá un SELECT final
-      BEGIN
-        OPEN cur;
-        read_loop: LOOP
-            FETCH cur INTO v_folio, v_incidencia_principal, v_abierto, v_status,
-                          v_incidencia_secundarias, v_abierto_por, v_nombreproyecto, v_origen, v_texto;
-            IF done THEN
-                LEAVE read_loop;
-            END IF;
-
-            -- Determinar incidencia_padre
-            IF v_incidencia_secundarias >= 1 THEN
-                SET v_incidencia_padre = v_folio;
-            ELSEIF v_incidencia_principal IS NOT NULL AND v_incidencia_principal != '' THEN
-                SET v_incidencia_padre = v_incidencia_principal;
-            ELSE
-                SET v_incidencia_padre = 'SIN DATOS';
-            END IF;
-
-            -- Parsear el bloque (mismo código de extracción que tenías)
-            SET v_bloque = REGEXP_SUBSTR(v_texto, '/\\*\\*Generic BEGIN\\*\\*/([\\s\\S]*?)/\\*\\*Generic END\\*\\*/');
-            IF v_bloque IS NOT NULL THEN
-                SET v_bloque = REPLACE(v_bloque, '/**Generic BEGIN**/', '');
-                SET v_bloque = REPLACE(v_bloque, '/**Generic END**/', '');
-                SET v_bloque = REGEXP_REPLACE(v_bloque, '[[:space:]]+', ' ');
-
-                -- Campos parseados
-                SET expediente_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&EXPEDIENTE:[^&\n]+'), '&EXPEDIENTE:', ''))),''),'SIN DATOS');
-                SET ext_contacto_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&EXT_CONTACTO:[^&\n]+'), '&EXT_CONTACTO:', ''))),''),'SIN DATOS');
-                SET cel_contacto_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CEL_CONTACTO:[^&\n]+'), '&CEL_CONTACTO:', ''))),''),'SIN DATOS');
-                SET nombre2_contacto_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&NOMBRE2_CONTACTO:[^&\n]+'), '&NOMBRE2_CONTACTO:', ''))),''),'SIN DATOS');
-                SET cel2_contacto_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CEL2_CONTACTO:[^&\n]+'), '&CEL2_CONTACTO:', ''))),''),'SIN DATOS');
-                SET correo_out = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CORREO:[^&\n]+'), '&CORREO:', '')),''),'SIN DATOS');
-                SET puesto_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&PUESTO:[^&\n]+'), '&PUESTO:', ''))),''),'SIN DATOS');
-                SET cc_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CC:[^&\n]+'), '&CC:', ''))),''),'SIN DATOS');
-                SET region_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&REGION:[^&\n]+'), '&REGION:', ''))),''),'SIN DATOS');
-                SET upn_out = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&UPN:[^&\n]+'), '&UPN:', '')),''),'SIN DATOS');
-                SET usuario_n_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&USUARIO_N:[^&\n]+'), '&USUARIO_N:', ''))),''),'SIN DATOS');
-                SET ip_out = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''),'SIN DATOS');
-                SET hostname_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&HOSTNAME:[^&\n]+'), '&HOSTNAME:', ''))),''),'SIN DATOS');
-                SET tipo_usuario_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&TIPO_USUARIO:[^&\n]+'), '&TIPO_USUARIO:', ''))),''),'SIN DATOS');
-                SET descripcion_incidente_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&DESCRIPCION_INCIDENTE:[^&\n]+'), '&DESCRIPCION_INCIDENTE:', ''))),''),'SIN DATOS');
-                SET numero_afectados_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'), '&NUMERO_AFECTADOS:[[:space:]]*', ''))),''),'SIN DATOS');
-                SET carrier_out = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&CARRIER:[^&\n]+'), '&CARRIER:', ''))),''),'SIN DATOS');
-                SET ip_carrier_out = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(v_bloque, '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS');
-
-                -- Emitimos fila con SELECT
-                SELECT 
-                    v_folio AS folio,
-                    v_incidencia_padre AS incidencia_padre,
-                    v_abierto AS abierto,
-                    v_status AS estatus,
-                    expediente_out AS expediente,
-                    v_abierto_por AS abierto_por,
-                    v_nombreproyecto AS nombreproyecto,
-                    ext_contacto_out AS ext_contacto,
-                    cel_contacto_out AS cel_contacto,
-                    nombre2_contacto_out AS nombre2_contacto,
-                    cel2_contacto_out AS cel2_contacto,
-                    correo_out AS mail,
-                    puesto_out AS puesto,
-                    cc_out AS CC,
-                    region_out AS region,
-                    upn_out AS UPN,
-                    usuario_n_out AS usuario_n,
-                    ip_out AS IP,
-                    hostname_out AS hostname,
-                    tipo_usuario_out AS tipo_usuario,
-                    descripcion_incidente_out AS descripcion_incidente,
-                    numero_afectados_out AS numero_afectados,
-                    carrier_out AS carrier,
-                    ip_carrier_out AS IP_carrier,
-                    v_origen AS origen;
-            END IF;
-        END LOOP;
-        CLOSE cur;
-      END
-    );
+    -- ===========================
+    -- 2. Registros CON plantilla
+    -- ===========================
+    SELECT
+        r.folio,
+        IF(r.incidencia_secundarias >= 1, r.folio, r.incidencia_principal) AS incidencia_padre,
+        r.abierto,
+        r.estatus,
+        -- Ahora parseamos en base a SUBSTRING_INDEX sobre bloque_limpio
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&EXPEDIENTE:', -1), '&', 1))), ''), 'SIN DATOS') AS expediente,
+        r.abierto_por,
+        r.nombreproyecto,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&EXT_CONTACTO:', -1), '&', 1))), ''), 'SIN DATOS') AS ext_contacto,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&CEL_CONTACTO:', -1), '&', 1))), ''), 'SIN DATOS') AS cel_contacto,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&NOMBRE2_CONTACTO:', -1), '&', 1))), ''), 'SIN DATOS') AS nombre2_contacto,
+        'SIN DATOS' AS cel2_contacto,
+        IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&CORREO:', -1), '&', 1)), ''), 'SIN DATOS') AS mail,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&PUESTO:', -1), '&', 1))), ''), 'SIN DATOS') AS puesto,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&CC:', -1), '&', 1))), ''), 'SIN DATOS') AS CC,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&REGION:', -1), '&', 1))), ''), 'SIN DATOS') AS region,
+        IFNULL(NULLIF(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&UPN:', -1), '&', 1)), ''), 'SIN DATOS') AS UPN,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&USUARIO_N:', -1), '&', 1))), ''), 'SIN DATOS') AS usuario_n,
+        IFNULL(NULLIF(REPLACE(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&IP:', -1), '&', 1))),' ',''),''),'SIN DATOS') AS IP,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&HOSTNAME:', -1), '&', 1))),''),'SIN DATOS') AS hostname,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&TIPO_USUARIO:', -1), '&', 1))),''),'SIN DATOS') AS tipo_usuario,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&DESCRIPCION_INCIDENTE:', -1), '&', 1))),''),'SIN DATOS') AS descripcion_incidente,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&NUMERO_AFECTADOS:', -1), '&', 1))),''),'SIN DATOS') AS numero_afectados,
+        IFNULL(NULLIF(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&CARRIER:', -1), '&', 1))),''),'SIN DATOS') AS carrier,
+        IFNULL(NULLIF(REPLACE(UPPER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(bloque_limpio, '&IP DEL CARRIER:', -1), '&', 1))),' ',''),''),'SIN DATOS') AS IP_carrier,
+        'EUT_SYSTEM' AS origen
+    FROM (
+        SELECT 
+            r.*,
+            -- Extraer bloque una sola vez usando LOCATE y SUBSTRING
+            TRIM(
+                SUBSTRING(
+                    CASE 
+                        WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
+                        ELSE r.obs_notasresolucion
+                    END,
+                    LOCATE('/**Generic BEGIN**/', CASE 
+                        WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
+                        ELSE r.obs_notasresolucion
+                    END) + LENGTH('/**Generic BEGIN**/'),
+                    LOCATE('/**Generic END**/', CASE 
+                        WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
+                        ELSE r.obs_notasresolucion
+                    END) - LOCATE('/**Generic BEGIN**/', CASE 
+                        WHEN r.descripcion LIKE '%/**Generic BEGIN**/%' THEN r.descripcion
+                        ELSE r.obs_notasresolucion
+                    END) - LENGTH('/**Generic BEGIN**/')
+                )
+            ) AS bloque_limpio
+        FROM eut_reportesbk.servicenow_reportes r
+        WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
+          AND r.origen = 'SNGlobal Incidentes'
+          AND r.abierto >= '2025-07-01 00:00:00'
+          AND (
+               r.descripcion LIKE '%/**Generic BEGIN**/%'
+               OR r.obs_notasresolucion LIKE '%/**Generic BEGIN**/%'
+          )
+    ) AS sub;
 
 END$$
 
