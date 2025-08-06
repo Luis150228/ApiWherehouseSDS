@@ -9,13 +9,14 @@ BEGIN
     -- Extrae todo desde hostname hasta fin de línea
     SET resultado = REGEXP_SUBSTR(
         texto,
-        '(?i)(hostname|host name|host-name)[[:space:]:-]*[^[:space:]\r\n]+'
+        '(?i)(hostname\\??|host name|host-name)[[:space:]:?-]*[^[:space:]\r\n]+'
     );
 
     -- Quita la palabra "hostname"/variantes y deja solo el valor
     IF resultado IS NOT NULL THEN
-        SET resultado = REGEXP_REPLACE(resultado, '(?i)(hostname|host name|host-name)[[:space:]:-]*', '');
-        SET resultado = TRIM(BOTH ' :' FROM resultado);
+        SET resultado = REGEXP_REPLACE(resultado, '(?i)(hostname\\??|host name|host-name)[[:space:]:?-]*', '');
+        -- Limpia espacios y los caracteres ':' y '?'
+        SET resultado = TRIM(BOTH ' :?' FROM resultado);
     ELSE
         SET resultado = 'SIN_DATOS';
     END IF;
