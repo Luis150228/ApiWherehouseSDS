@@ -1,3 +1,35 @@
+desconoce la columna expediente_raw  tal vez te sirva saber que hace fn_parseItemGenericQuality para no retrabajar y crear una funcion mas optima
+
+CREATE DEFINER=`lrangel`@`%` FUNCTION `fn_parseItemGenericQuality`(var_bloque LONGTEXT, var_title VARCHAR(50)) RETURNS mediumtext CHARSET utf8mb4
+    DETERMINISTIC
+BEGIN
+
+DECLARE let_content mediumtext;
+DECLARE let_contentprev mediumtext;
+DECLARE let_camp mediumtext;
+DECLARE let_expediente varchar(20);
+DECLARE let_comodin varchar(50);
+ 
+IF var_title = 'CORREO' THEN
+	SET let_contentprev = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, CONCAT('&', var_title, ':[^&\n]+')), CONCAT('&', var_title, ':'), '')),''), NULL);
+ELSEIF var_title = 'UPN' THEN
+	SET let_contentprev = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, '&UPN:[^&\n]+'), '&UPN:', '')),''), NULL);
+ELSEIF var_title = 'IP' THEN
+	SET let_contentprev = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''), NULL);
+ELSEIF var_title = 'NUMERO_AFECTADOS' THEN
+	SET let_contentprev = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'),'&NUMERO_AFECTADOS:[[:space:]]*', ''))),''), NULL);
+ELSEIF var_title = 'CARRIER' THEN
+	SET let_contentprev = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, '&CARRIER:[^&\n]+'), '&CARRIER:', ''))),''), NULL);
+ELSEIF var_title = 'CC' THEN
+	SET let_contentprev = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, CONCAT('&',var_title,':[^&\n]+')), CONCAT('&',var_title,':'), ''))),''), NULL);
+ELSE
+  SET let_contentprev = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, CONCAT('&',var_title,':[^&\n]+')), CONCAT('&',var_title,':'), ''))),''),NULL);
+END IF;
+ 
+
+RETURN let_contentprev;
+END
+
 DELIMITER $$
 
 CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_QualitySimple`()
@@ -88,15 +120,15 @@ BEGIN
       r.abierto,
 
       /* ==== RAW desde plantilla (como lo escribieron) ==== */
-      fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'EXPEDIENTE')       AS expediente_raw,
-      fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'REGION')           AS region_raw,
-      fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CORREO')           AS mail_raw,
-      fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CC')               AS CC_raw,
-      fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CEL_CONTACTO')     AS cel_raw,
-      fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'IP')               AS IP_raw,
-      fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'HOSTNAME')         AS hostname_raw,
-      fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'UPN')              AS UPN_raw,
-      fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'NUMERO_AFECTADOS') AS numaf_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'EXPEDIENTE')       AS expediente_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'REGION')           AS region_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CORREO')           AS mail_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CC')               AS CC_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CEL_CONTACTO')     AS cel_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'IP')               AS IP_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'HOSTNAME')         AS hostname_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'UPN')              AS UPN_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'NUMERO_AFECTADOS') AS numaf_raw,
 
       /* ==== Normalización ==== */
 
@@ -174,3 +206,5 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+
