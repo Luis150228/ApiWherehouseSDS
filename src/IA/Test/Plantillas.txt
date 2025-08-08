@@ -1,6 +1,8 @@
 DELIMITER $$
 
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_QualityScore`()
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_QualityScore`(
+  IN p_modo VARCHAR(10)  -- 'detalle' o 'score'
+)
 BEGIN
   WITH
   base AS (
@@ -9,8 +11,6 @@ BEGIN
       r.folio,
       IF(r.incidencia_principal <> '', r.incidencia_principal, r.folio) AS incidencia_principal,
       r.abierto,
-
-      /* Tomado solo de la plantilla (concat de ambos campos como ya lo usas) */
       fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'EXPEDIENTE')        AS expediente,
       fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'REGION')            AS region,
       fn_parseItemGeneric(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CORREO')            AS mail,
@@ -23,7 +23,7 @@ BEGIN
     FROM servicenow_reportes r
     WHERE (r.incidencia_principal <> '' OR r.incidencia_secundarias >= 1)
       AND r.origen = 'SNGlobal Incidentes'
-      AND r.abierto >= '2025-07-01 00:00:00'  -- si quieres últimos 30 días:  NOW() - INTERVAL 30 DAY
+      AND r.abierto >= NOW() - INTERVAL 30 DAY
       AND (r.descripcion LIKE '%**Gener%' OR r.obs_notasresolucion LIKE '%**Gener%')
   ),
   norm AS (
@@ -43,8 +43,6 @@ BEGIN
   flags AS (
     SELECT
       n.*,
-
-      /* Presencia / formato */
       IF(n.expediente_n IS NOT NULL, 1, 0)                                                       AS f_exp,
       IF(n.expediente_n REGEXP '^[CSZ][0-9]{6}$', 1, 0)                                          AS f_exp_fmt,
       IF(n.region_n IS NOT NULL, 1, 0)                                                           AS f_reg,
@@ -59,17 +57,35 @@ BEGIN
     FROM norm n
   )
   SELECT
-    f.abierto_por,
+    CASE 
+      WHEN p_modo = 'detalle' THEN f.abierto_por
+      ELSE f.abierto_por
+    END AS abierto_por,
+
     f.folio,
     f.incidencia_principal,
     f.abierto,
+
+    /* si es detalle mostramos todo */
+    IF(p_modo='detalle', f.expediente, NULL)       AS expediente,
+    IF(p_modo='detalle', f.region, NULL)           AS region,
+    IF(p_modo='detalle', f.mail, NULL)             AS mail,
+    IF(p_modo='detalle', f.CC, NULL)               AS CC,
+    IF(p_modo='detalle', f.cel_contacto, NULL)     AS cel_contacto,
+    IF(p_modo='detalle', f.IP, NULL)               AS IP,
+    IF(p_modo='detalle', f.hostname, NULL)         AS hostname,
+    IF(p_modo='detalle', f.UPN, NULL)              AS UPN,
+    IF(p_modo='detalle', f.numero_afectados, NULL) AS numero_afectados,
+
+    /* score siempre */
     (
       f.f_exp + f.f_exp_fmt + f.f_reg + f.f_reg_len +
       f.f_mail_fmt + f.f_cc_fmt + f.f_cel_fmt +
       f.f_ip_fmt + f.f_host_fmt + f.f_upn_dom + f.f_numaf_fmt
     ) AS score
+
   FROM flags f
-  ORDER BY score DESC, f.abierto DESC;
+  ORDER BY f.score DESC, f.abierto DESC;
 END$$
 
 DELIMITER ;
