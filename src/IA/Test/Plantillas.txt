@@ -1,9 +1,124 @@
-SELECT 
-    REGEXP_SUBSTR(campo_texto, '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}') AS correo_extraido
-FROM 
-    tabla;
+perdon mi culpa toma como base el sigueinte store procedure de MAriaDB solo para el caso de (r.descripcion LIKE '%**Gener%' OR r.obs_notasresolucion LIKE '%**Gener%') si el 100% y de ahi calcula
 
-SELECT 
-    REGEXP_SUBSTR(campo_texto, '\\b[0-9]{3,5}\\b') AS ceco
-FROM 
-    tabla;
+CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_Quality`()
+BEGIN
+        SELECT
+			r.folio,
+               if(r.incidencia_principal != '', r.incidencia_principal, r.folio) as 'incidencia_principal',
+               r.abierto,
+               r.estatus,
+               r.incidencia_secundarias,
+               fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'EXPEDIENTE') as expediente,
+               r.abierto_por,
+               r.nombreproyecto,
+				fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'EXT_CONTACTO') as 'ext_contacto',
+				fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'CEL_CONTACTO') as 'cel_contacto',
+				fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'NOMBRE2_CONTACTO') as 'nombre2_contacto',
+				fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'CEL2_CONTACTO') as 'cel2_contacto',
+                fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'CORREO') as 'Correo',
+				fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'PUESTO') as 'Puesto',
+				fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'CC') as 'CC',
+				IF(LENGTH(fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'REGION'))<=11, fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), fn_parseItemGenericComodin(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'REGION')), 'REGION CECO') as 'Region',
+                fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'UPN') as 'UPN',
+				fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'USUARIO_N') as 'usuario_N',
+                fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'IP') as 'IP',
+				UPPER(fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'HOSTNAME')) as 'Hostname',
+				IFNULL(fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'TIPO_USUARIO'), UPPER(r.suc_corp)) as 'Tipo_usuario',
+				fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'DESCRIPCION_INCIDENTE') as 'Descripcion_incidente',
+				fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'NUMERO_AFECTADOS') AS 'Numero_afectados',
+                fn_parseItemGeneric(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), 'CARRIER') AS 'Carrier',
+				IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(CONCAT(r.descripcion, '/n', r.obs_notasresolucion), '&IP DEL CARRIER:[^&\n]+'), '&IP DEL CARRIER:', ''))),' ',''),''),'SIN DATOS') as 'IP_Carrier',
+				r.cerrado_por as 'origen_analist',
+                DATE_FORMAT(r.abierto, '%M-%d') as 'dia',
+                DATE_FORMAT(r.abierto, '%H') as 'hora'
+        FROM servicenow_reportes r
+        WHERE (r.incidencia_principal != '' OR r.incidencia_secundarias >= 1)
+			AND origen = 'SNGlobal Incidentes'
+          AND r.abierto >= '2025-07-01 00:00:00'
+          AND (r.descripcion LIKE '%**Gener%' OR r.obs_notasresolucion LIKE '%**Gener%');
+END
+
+
+Plantilla 
+/**Generic BEGIN**/
+&Expediente: 
+&ext_contacto:
+&cel_contacto:
+&nombre2_contacto:
+
+&ext2_contacto:
+&cel2_contacto:
+&Correo: (de puesto para sucursales)
+&Puesto:
+&CC: 
+&Region: Occidente, Centro, Norte, Sur, Metro Edificios, Metro Sucursales
+&UPN:
+&usuario_N:
+&IP:
+&Hostname:
+&Tipo_usuario: Sucursal, Corporativo, Contac Center
+&Descripcion_incidente: 
+&Numero_afectados: 2-4
+Pantalla_error (se deja de anexar hasta que lo indique Supervisor o Bandejas)
+Para VPN           
+&Carrier: Telmex, TotalPlay, Movistar, etc
+&IP del Carrier: 0.0.0.0
+/**Generic END**/
+
+/**GenericShort BEGIN**/
+
+&Expediente: 
+&ext_contacto:
+&cel_contacto:
+&CC: 
+&Hostname:
+&Region: Occidente, Centro, Norte, Sur, Metro Edificios, Metro Sucursales
+
+Para VPN           
+&Carrier: Telmex, TotalPlay, Movistar, etc
+&IP del Carrier: 0.0.0.0
+
+/**GenericShort END**/
+
+
+Plantilla Correctamente llenada
+/**Generic BEGIN**/
+&Expediente: S356882
+&ext_contacto: 35554
+&cel_contacto: 4611357032
+&nombre2_contacto: Jose Antonio Franco
+
+&ext2_contacto:11122
+&cel2_contacto:4611366121
+&Correo: oficialsuc0123@correo.mail.com
+&Puesto: Oficial de Cajas
+&CC: 123 
+&Region: Centro
+&UPN: S356882@correo.mail.com
+&usuario_N: n247993
+&IP:180.192.16.12
+&Hostname: 0123OFC
+&Tipo_usuario: Sucursal
+&Descripcion_incidente: fALLA EN oPICS
+&Numero_afectados: 2-4
+Pantalla_error (se deja de anexar hasta que lo indique Supervisor o Bandejas)
+Para VPN           
+&Carrier: nO APLICA
+&IP del Carrier: no aplica
+/**Generic END**/
+
+
+/**GenericShort BEGIN**/
+
+&Expediente: S356882
+&ext_contacto:35554
+&cel_contacto:4611357032
+&CC: 0123
+&Hostname:0123OFC
+&Region: CENTRO
+
+Para VPN           
+&Carrier: Telmex
+&IP del Carrier: 180.163.125.123
+
+/**GenericShort END**/
