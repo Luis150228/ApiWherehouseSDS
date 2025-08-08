@@ -1,125 +1,188 @@
-desconoce la columna expediente_raw  tal vez te sirva saber que hace fn_parseItemGenericQuality para no retrabajar y crear una funcion mas optima
-
-CREATE DEFINER=`lrangel`@`%` FUNCTION `fn_parseItemGenericQuality`(var_bloque LONGTEXT, var_title VARCHAR(50)) RETURNS mediumtext CHARSET utf8mb4
-    DETERMINISTIC
-BEGIN
-
-DECLARE let_content mediumtext;
-DECLARE let_contentprev mediumtext;
-DECLARE let_camp mediumtext;
-DECLARE let_expediente varchar(20);
-DECLARE let_comodin varchar(50);
- 
-IF var_title = 'CORREO' THEN
-	SET let_contentprev = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, CONCAT('&', var_title, ':[^&\n]+')), CONCAT('&', var_title, ':'), '')),''), NULL);
-ELSEIF var_title = 'UPN' THEN
-	SET let_contentprev = IFNULL(NULLIF(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, '&UPN:[^&\n]+'), '&UPN:', '')),''), NULL);
-ELSEIF var_title = 'IP' THEN
-	SET let_contentprev = IFNULL(NULLIF(REPLACE(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, '&IP:[^&\n]+'), '&IP:', ''))),' ',''),''), NULL);
-ELSEIF var_title = 'NUMERO_AFECTADOS' THEN
-	SET let_contentprev = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, '&NUMERO_AFECTADOS:[[:space:]]*[0-9\\-]+'),'&NUMERO_AFECTADOS:[[:space:]]*', ''))),''), NULL);
-ELSEIF var_title = 'CARRIER' THEN
-	SET let_contentprev = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, '&CARRIER:[^&\n]+'), '&CARRIER:', ''))),''), NULL);
-ELSEIF var_title = 'CC' THEN
-	SET let_contentprev = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, CONCAT('&',var_title,':[^&\n]+')), CONCAT('&',var_title,':'), ''))),''), NULL);
-ELSE
-  SET let_contentprev = IFNULL(NULLIF(UPPER(TRIM(REGEXP_REPLACE(REGEXP_SUBSTR(var_bloque, CONCAT('&',var_title,':[^&\n]+')), CONCAT('&',var_title,':'), ''))),''),NULL);
-END IF;
- 
-
-RETURN let_contentprev;
-END
-
 DELIMITER $$
 
 CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_QualitySimple`()
 BEGIN
   SELECT
-    x.abierto_por,
-    x.folio,
-    x.incidencia_principal,
-    x.abierto,
+    f.abierto_por,
+    f.folio,
+    f.incidencia_principal,
+    f.abierto,
 
-    /* Campos tal cual (sin normalizar) para que veas qué venía en la plantilla */
-    x.expediente_raw   AS expediente,
-    x.region_raw       AS region,
-    x.mail_raw         AS mail,
-    x.CC_raw           AS CC,
-    x.cel_raw          AS cel_contacto,
-    x.IP_raw           AS IP,
-    x.hostname_raw     AS hostname,
-    x.UPN_raw          AS UPN,
-    x.numaf_raw        AS numero_afectados,
+    /* Campos tal cual venían en la plantilla */
+    f.expediente_raw   AS expediente,
+    f.region_raw       AS region,
+    f.mail_raw         AS mail,
+    f.CC_raw           AS CC,
+    f.cel_raw          AS cel_contacto,
+    f.IP_raw           AS IP,
+    f.hostname_raw     AS hostname,
+    f.UPN_raw          AS UPN,
+    f.numaf_raw        AS numero_afectados,
 
-    /* ===== Score =====
-       1 punto por cada regla cumplida
-    */
+    /* ===== Score ===== */
     (
-      /* 1) Expediente: C/S/Z + 6 dígitos */
-      IF(x.expediente_n REGEXP '^[CSZ][0-9]{6}$', 1, 0) +
-
-      /* 2) Region: <= 11 chars */
-      IF(x.region_n IS NOT NULL AND CHAR_LENGTH(x.region_n) <= 11, 1, 0) +
-
-      /* 3) Mail: válido y dominio santander.com.mx */
-      IF(x.mail_n REGEXP '^[A-Za-z0-9._%+-]+@santander\\.com\\.mx$', 1, 0) +
-
-      /* 4) CC: 3–5 dígitos */
-      IF(x.CC_n REGEXP '^[0-9]{3,5}$', 1, 0) +
-
-      /* 5) Celular: 10 dígitos exactos (sin letras) */
-      IF(x.cel_digits REGEXP '^[0-9]{10}$', 1, 0) +
-
-      /* 6) IP v4 válida */
-      IF(x.IP_n REGEXP '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$', 1, 0) +
-
-      /* 7) Hostname básico válido */
-      IF(x.host_n REGEXP '^[A-Za-z0-9][A-Za-z0-9-]{0,62}(\\.[A-Za-z0-9-]{1,63})*$', 1, 0) +
-
-      /* 8) UPN contiene el dominio del mail (si ambos están) */
-      IF(x.UPN_n IS NOT NULL AND x.mail_n IS NOT NULL
-         AND x.UPN_n LIKE CONCAT('%', SUBSTRING_INDEX(x.mail_n, '@', -1)), 1, 0) +
-
-      /* 9) Numero_afectados: vacío o n o n-m */
-      IF(x.numaf_n IS NULL OR x.numaf_n REGEXP '^[0-9]+(-[0-9]+)?$', 1, 0)
+      IF(f.expediente_n REGEXP '^[CSZ][0-9]{6}$', 1, 0) +
+      IF(f.region_n IS NOT NULL AND CHAR_LENGTH(f.region_n) <= 11, 1, 0) +
+      IF(f.mail_n   REGEXP '^[A-Za-z0-9._%+-]+@santander\\.com\\.mx$', 1, 0) +
+      IF(f.CC_n     REGEXP '^[0-9]{3,5}$', 1, 0) +
+      IF(f.cel_digits REGEXP '^[0-9]{10}$', 1, 0) +
+      IF(f.IP_n     REGEXP '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$', 1, 0) +
+      IF(f.host_n   REGEXP '^[A-Za-z0-9][A-Za-z0-9-]{0,62}(\\.[A-Za-z0-9-]{1,63})*$', 1, 0) +
+      IF(f.UPN_n IS NOT NULL AND f.mail_n IS NOT NULL
+         AND f.UPN_n LIKE CONCAT('%', SUBSTRING_INDEX(f.mail_n,'@',-1)), 1, 0) +
+      IF(f.numaf_n IS NULL OR f.numaf_n REGEXP '^[0-9]+(-[0-9]+)?$', 1, 0)
     ) AS score,
 
-    /* ===== Faltantes ===== (normalizados a NULL) */
+    /* Faltantes */
     TRIM(BOTH ',' FROM CONCAT_WS(',',
-      IF(x.expediente_n IS NULL, 'expediente', NULL),
-      IF(x.region_n     IS NULL, 'region',     NULL),
-      IF(x.mail_n       IS NULL, 'mail',       NULL),
-      IF(x.CC_n         IS NULL, 'CC',         NULL),
-      IF(x.cel_digits   IS NULL, 'cel_contacto', NULL),
-      IF(x.IP_n         IS NULL, 'IP',         NULL),
-      IF(x.host_n       IS NULL, 'hostname',   NULL),
-      IF(x.UPN_n        IS NULL, 'UPN',        NULL),
-      IF(x.numaf_n      IS NULL, 'numero_afectados', NULL)
+      IF(f.expediente_n IS NULL, 'expediente', NULL),
+      IF(f.region_n     IS NULL, 'region',     NULL),
+      IF(f.mail_n       IS NULL, 'mail',       NULL),
+      IF(f.CC_n         IS NULL, 'CC',         NULL),
+      IF(f.cel_digits   IS NULL, 'cel_contacto', NULL),
+      IF(f.IP_n         IS NULL, 'IP',         NULL),
+      IF(f.host_n       IS NULL, 'hostname',   NULL),
+      IF(f.UPN_n        IS NULL, 'UPN',        NULL),
+      IF(f.numaf_n      IS NULL, 'numero_afectados', NULL)
     )) AS faltantes_csv,
 
-    /* ===== Presentes pero inválidos ===== */
+    /* Presentes pero inválidos */
     TRIM(BOTH ',' FROM CONCAT_WS(',',
-      IF(x.expediente_n IS NOT NULL AND NOT (x.expediente_n REGEXP '^[CSZ][0-9]{6}$'), 'expediente_invalido', NULL),
-      IF(x.region_n     IS NOT NULL AND NOT (CHAR_LENGTH(x.region_n) <= 11), 'region_larga', NULL),
-      IF(x.mail_n       IS NOT NULL AND NOT (x.mail_n REGEXP '^[A-Za-z0-9._%+-]+@santander\\.com\\.mx$'), 'mail_dominio_invalido', NULL),
-      IF(x.CC_n         IS NOT NULL AND NOT (x.CC_n REGEXP '^[0-9]{3,5}$'), 'cc_invalido', NULL),
-      /* si trae letras o no son 10 dígitos exactos */
-      IF(x.cel_raw IS NOT NULL AND NOT (x.cel_digits REGEXP '^[0-9]{10}$'), 'cel_invalido', NULL),
-      IF(x.IP_n         IS NOT NULL AND NOT (x.IP_n REGEXP '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$'), 'ip_invalida', NULL),
-      IF(x.host_n       IS NOT NULL AND NOT (x.host_n REGEXP '^[A-Za-z0-9][A-Za-z0-9-]{0,62}(\\.[A-Za-z0-9-]{1,63})*$'), 'hostname_invalido', NULL),
-      IF(x.UPN_n IS NOT NULL AND x.mail_n IS NOT NULL
-         AND NOT (x.UPN_n LIKE CONCAT('%', SUBSTRING_INDEX(x.mail_n, '@', -1))), 'upn_dominio_distinto', NULL),
-      IF(x.numaf_n      IS NOT NULL AND NOT (x.numaf_n REGEXP '^[0-9]+(-[0-9]+)?$'), 'numero_afectados_invalido', NULL)
+      IF(f.expediente_n IS NOT NULL AND NOT (f.expediente_n REGEXP '^[CSZ][0-9]{6}$'), 'expediente_invalido', NULL),
+      IF(f.region_n     IS NOT NULL AND NOT (CHAR_LENGTH(f.region_n) <= 11), 'region_larga', NULL),
+      IF(f.mail_n       IS NOT NULL AND NOT (f.mail_n REGEXP '^[A-Za-z0-9._%+-]+@santander\\.com\\.mx$'), 'mail_dominio_invalido', NULL),
+      IF(f.CC_n         IS NOT NULL AND NOT (f.CC_n REGEXP '^[0-9]{3,5}$'), 'cc_invalido', NULL),
+      IF(f.cel_digits   IS NOT NULL AND NOT (f.cel_digits REGEXP '^[0-9]{10}$'), 'cel_invalido', NULL),
+      IF(f.IP_n         IS NOT NULL AND NOT (f.IP_n REGEXP '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$'), 'ip_invalida', NULL),
+      IF(f.host_n       IS NOT NULL AND NOT (f.host_n REGEXP '^[A-Za-z0-9][A-Za-z0-9-]{0,62}(\\.[A-Za-z0-9-]{1,63})*$'), 'hostname_invalido', NULL),
+      IF(f.UPN_n IS NOT NULL AND f.mail_n IS NOT NULL
+         AND NOT (f.UPN_n LIKE CONCAT('%', SUBSTRING_INDEX(f.mail_n,'@',-1))), 'upn_dominio_distinto', NULL),
+      IF(f.numaf_n      IS NOT NULL AND NOT (f.numaf_n REGEXP '^[0-9]+(-[0-9]+)?$'), 'numero_afectados_invalido', NULL)
     )) AS invalidos_csv
 
   FROM (
+    /* 1) RAW */
     SELECT
       r.abierto_por,
       r.folio,
       IF(r.incidencia_principal <> '', r.incidencia_principal, r.folio) AS incidencia_principal,
       r.abierto,
 
-      /* ==== RAW desde plantilla (como lo escribieron) ==== */
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'EXPEDIENTE')       AS expediente_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'REGION')           AS region_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CORREO')           AS mail_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CC')               AS CC_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CEL_CONTACTO')     AS cel_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'IP')               AS IP_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'HOSTNAME')         AS hostname_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'UPN')              AS UPN_raw,
+      fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'NUMERO_AFECTADOS') AS numaf_raw
+    FROM servicenow_reportes r
+    WHERE (r.incidencia_principal <> '' OR r.incidencia_secundarias >= 1)
+      AND r.origen = 'SNGlobal Incidentes'
+      AND r.abierto >= NOW() - INTERVAL 30 DAY
+      AND (r.descripcion LIKE '%**Gener%' OR r.obs_notasresolucion LIKE '%**Gener%')
+  ) raw
+  /* 2) NORM (usa los alias de RAW sin re-evaluar funciones) */
+  JOIN (
+    SELECT
+      r2.folio,
+
+      /* normalización común */
+      CASE
+        WHEN r2.expediente_raw IS NULL THEN NULL
+        WHEN UPPER(TRIM(r2.expediente_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
+        ELSE UPPER(TRIM(r2.expediente_raw))
+      END AS expediente_n,
+
+      CASE
+        WHEN r2.region_raw IS NULL THEN NULL
+        WHEN UPPER(TRIM(r2.region_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
+        ELSE TRIM(r2.region_raw)
+      END AS region_n,
+
+      CASE
+        WHEN r2.mail_raw IS NULL THEN NULL
+        WHEN LOWER(TRIM(r2.mail_raw)) IN ('', 'sin datos', 'no aplica', 'n/a', 'na', 'noaplica') THEN NULL
+        ELSE LOWER(TRIM(r2.mail_raw))
+      END AS mail_n,
+
+      CASE
+        WHEN r2.CC_raw IS NULL THEN NULL
+        WHEN UPPER(TRIM(r2.CC_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
+        ELSE TRIM(r2.CC_raw)
+      END AS CC_n,
+
+      CASE
+        WHEN r2.cel_raw IS NULL THEN NULL
+        WHEN UPPER(TRIM(r2.cel_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
+        ELSE REGEXP_REPLACE(TRIM(r2.cel_raw), '[^0-9]', '')
+      END AS cel_digits,
+
+      CASE
+        WHEN r2.IP_raw IS NULL THEN NULL
+        WHEN UPPER(TRIM(r2.IP_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
+        ELSE TRIM(r2.IP_raw)
+      END AS IP_n,
+
+      CASE
+        WHEN r2.hostname_raw IS NULL THEN NULL
+        WHEN UPPER(TRIM(r2.hostname_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
+        ELSE UPPER(TRIM(r2.hostname_raw))
+      END AS host_n,
+
+      CASE
+        WHEN r2.UPN_raw IS NULL THEN NULL
+        WHEN LOWER(TRIM(r2.UPN_raw)) IN ('', 'sin datos', 'no aplica', 'n/a', 'na', 'noaplica') THEN NULL
+        ELSE LOWER(TRIM(r2.UPN_raw))
+      END AS UPN_n,
+
+      CASE
+        WHEN r2.numaf_raw IS NULL THEN NULL
+        WHEN UPPER(TRIM(r2.numaf_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
+        ELSE TRIM(r2.numaf_raw)
+      END AS numaf_n
+    FROM (
+      SELECT * FROM (
+        /* duplicamos el RAW minimal para poder normalizar por fuera */
+        SELECT
+          r1.folio, r1.expediente_raw, r1.region_raw, r1.mail_raw, r1.CC_raw,
+          r1.cel_raw, r1.IP_raw, r1.hostname_raw, r1.UPN_raw, r1.numaf_raw
+        FROM servicenow_reportes s
+        JOIN (
+          SELECT * FROM (
+            SELECT
+              r.abierto_por, r.folio,
+              IF(r.incidencia_principal <> '', r.incidencia_principal, r.folio) AS incidencia_principal,
+              r.abierto,
+              fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'EXPEDIENTE')       AS expediente_raw,
+              fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'REGION')           AS region_raw,
+              fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CORREO')           AS mail_raw,
+              fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CC')               AS CC_raw,
+              fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CEL_CONTACTO')     AS cel_raw,
+              fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'IP')               AS IP_raw,
+              fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'HOSTNAME')         AS hostname_raw,
+              fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'UPN')              AS UPN_raw,
+              fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'NUMERO_AFECTADOS') AS numaf_raw
+            FROM servicenow_reportes r
+            WHERE (r.incidencia_principal <> '' OR r.incidencia_secundarias >= 1)
+              AND r.origen = 'SNGlobal Incidentes'
+              AND r.abierto >= NOW() - INTERVAL 30 DAY
+              AND (r.descripcion LIKE '%**Gener%' OR r.obs_notasresolucion LIKE '%**Gener%')
+          ) t0
+        ) r1 ON s.folio = r1.folio
+      ) t1
+    ) r2
+  ) n ON n.folio = raw.folio
+
+  /* 3) Proyecta ambos (raw + norm) en una sola fila */
+  JOIN (
+    SELECT
+      r.abierto_por,
+      r.folio,
+      IF(r.incidencia_principal <> '', r.incidencia_principal, r.folio) AS incidencia_principal,
+      r.abierto,
+
       fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'EXPEDIENTE')       AS expediente_raw,
       fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'REGION')           AS region_raw,
       fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CORREO')           AS mail_raw,
@@ -130,81 +193,16 @@ BEGIN
       fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'UPN')              AS UPN_raw,
       fn_parseItemGenericQuality(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'NUMERO_AFECTADOS') AS numaf_raw,
 
-      /* ==== Normalización ==== */
-
-      /* Vacíos: NULL, '', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA' */
-      /* Expediente en MAYÚSCULAS y sin espacios en extremos */
-      CASE
-        WHEN expediente_raw IS NULL THEN NULL
-        WHEN UPPER(TRIM(expediente_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
-        ELSE UPPER(TRIM(expediente_raw))
-      END AS expediente_n,
-
-      /* Región */
-      CASE
-        WHEN region_raw IS NULL THEN NULL
-        WHEN UPPER(TRIM(region_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
-        ELSE TRIM(region_raw)
-      END AS region_n,
-
-      /* Mail: a minúsculas para validar dominio exacto */
-      CASE
-        WHEN mail_raw IS NULL THEN NULL
-        WHEN LOWER(TRIM(mail_raw)) IN ('', 'sin datos', 'no aplica', 'n/a', 'na', 'noaplica') THEN NULL
-        ELSE LOWER(TRIM(mail_raw))
-      END AS mail_n,
-
-      /* CC */
-      CASE
-        WHEN CC_raw IS NULL THEN NULL
-        WHEN UPPER(TRIM(CC_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
-        ELSE TRIM(CC_raw)
-      END AS CC_n,
-
-      /* Celular: guardo versión solo-dígitos para validar */
-      CASE
-        WHEN cel_raw IS NULL THEN NULL
-        WHEN UPPER(TRIM(cel_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
-        ELSE REGEXP_REPLACE(TRIM(cel_raw), '[^0-9]', '')
-      END AS cel_digits,
-
-      /* IP: mayúsculas/trim y luego validar IPv4 */
-      CASE
-        WHEN IP_raw IS NULL THEN NULL
-        WHEN UPPER(TRIM(IP_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
-        ELSE TRIM(IP_raw)
-      END AS IP_n,
-
-      /* Hostname en mayúsculas (como tu ejemplo) */
-      CASE
-        WHEN hostname_raw IS NULL THEN NULL
-        WHEN UPPER(TRIM(hostname_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
-        ELSE UPPER(TRIM(hostname_raw))
-      END AS host_n,
-
-      /* UPN a minúsculas para comparar dominios */
-      CASE
-        WHEN UPN_raw IS NULL THEN NULL
-        WHEN LOWER(TRIM(UPN_raw)) IN ('', 'sin datos', 'no aplica', 'n/a', 'na', 'noaplica') THEN NULL
-        ELSE LOWER(TRIM(UPN_raw))
-      END AS UPN_n,
-
-      /* Numero afectados */
-      CASE
-        WHEN numaf_raw IS NULL THEN NULL
-        WHEN UPPER(TRIM(numaf_raw)) IN ('', 'SIN DATOS', 'NO APLICA', 'N/A', 'NA', 'NOAPLICA') THEN NULL
-        ELSE TRIM(numaf_raw)
-      END AS numaf_n
-
+      n.expediente_n, n.region_n, n.mail_n, n.CC_n, n.cel_digits, n.IP_n, n.host_n, n.UPN_n, n.numaf_n
     FROM servicenow_reportes r
+    JOIN n ON n.folio = r.folio
     WHERE (r.incidencia_principal <> '' OR r.incidencia_secundarias >= 1)
       AND r.origen = 'SNGlobal Incidentes'
       AND r.abierto >= NOW() - INTERVAL 30 DAY
       AND (r.descripcion LIKE '%**Gener%' OR r.obs_notasresolucion LIKE '%**Gener%')
-  ) AS x
-  ORDER BY score DESC, x.abierto DESC;
+  ) f ON f.folio = raw.folio
+
+  ORDER BY score DESC, f.abierto DESC;
 END$$
 
 DELIMITER ;
-
-
