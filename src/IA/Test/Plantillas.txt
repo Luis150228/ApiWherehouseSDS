@@ -1,1 +1,163 @@
-https://github.com/Luis150228/eut_genericTree.git
+esta es mi tabla de usuarios 
+
+CREATE TABLE `eut_users` (
+  `num_user` int NOT NULL AUTO_INCREMENT,
+  `user` varchar(10) NOT NULL,
+  `nombre` varchar(250) NOT NULL,
+  `ubicacion` varchar(150) DEFAULT NULL,
+  `tipo_almacen` varchar(45) DEFAULT NULL,
+  `nivel` int NOT NULL DEFAULT '4',
+  `ctrl_acceso` mediumtext NOT NULL,
+  `puesto` varchar(150) NOT NULL,
+  `password` mediumtext NOT NULL,
+  `estatus` int NOT NULL DEFAULT '1',
+  `logg` int DEFAULT NULL,
+  `token` longtext,
+  `last_login` datetime DEFAULT NULL,
+  `creado` datetime DEFAULT NULL,
+  PRIMARY KEY (`num_user`)
+) ENGINE=InnoDB AUTO_INCREMENT=1102 DEFAULT CHARSET=utf8mb3;
+
+
+este es el contenido de prueba de la tabla  de la tabla 
+
+'1007', 'C356882', 'Rangel Diaz Luis', 'EUT', 'Fisico', '0', 'Developer', '620fe5c84537ab8c6dd907b8942c61fe43558d88eb7f521f9aae0b6c27c44bd4', '1', '1', 'bbce9c28282841bd8477544085637c1d08276267823091519a57f2204a658e31', '2025-08-12 12:29:32', '2025-08-12 12:29:32'
+'1008', 'I356882', 'Rangel Diaz Luis', 'CAU', 'Fisico', '1', 'Interno', 'fe8836398e49273dc97005935f10cc203f4885e3310510a05a39229400070034', '1', '1', 'ee2304d79303c4f165b2e84ecf151cd70048d75f1f1b9fbe8f9c98fe24ccaebd', '2023-11-09 08:44:47', '2023-11-09 08:44:47'
+'1009', 'E356882', 'Rangel Diaz Luis', 'CAU', 'Fisico', '2', 'Externo', 'fe8836398e49273dc97005935f10cc203f4885e3310510a05a39229400070034', '1', '1', NULL, '2023-11-09 08:44:47', '2023-11-09 08:44:47'
+'1010', 'C291901', 'Linda Frias Tellez', 'EUT', 'Fisico', '0', 'Developer', 'bb153025cfbaf7bc0baa2acaf279f3e2c9c2913e945f4e1073e58d6de3c4c647', '1', '1', 'b18567a3c434a11dc6a2720075ea7c286c5db158a5992bda8c9e46b00499b27d', '2025-06-06 16:32:48', '2025-06-06 16:32:48'
+'1011', 'C072106', 'OMAR MARTINEZ LOBATON', 'EUT', 'Fisico', '0', 'Interno', '2f295cefd1654a711b72bf74a0dc161d4272deca725a5eb005f7bb05fbb4b926', '1', '1', NULL, '0000-00-00 00:00:00', '2025-08-14 11:32:48'
+
+
+datos de mi backend
+{
+    "creador": "Rangel Diaz Luis Fernando",
+    "usuario": "C356882",
+    "url": "http://180.176.105.244/eut_api_reportes/rutes/",
+    "base": "http://180.176.105.244/eut_api_reportes/"
+}
+
+mi backend rutes/auth.php
+<?php
+require_once '../classes/auth.class.php';
+
+$_auth = new auth;
+
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    // http_response_code(200);
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE');
+    header('Access-Control-Allow-Headers: X-Requested-With, Content-Type, Origin, Authorization, Accept, Client-Security-Token, Accept-Encoding');
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+    //Recepcion de datos del cliente
+    $resBody = file_get_contents('php://input');
+    //Se envian los datos a los controladores de Clases
+    $resClass = $_auth->login($resBody);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode($resClass);
+}else{
+    header('Content-Type: application/json; charset=UTF-8');
+    http_response_code(405);
+    echo json_encode($resClass);
+}
+
+
+classes/auth.class.php
+<?php
+ini_set('max_execution_time', 300);
+include_once '../conexion/cnx.php';
+
+class auth extends cnx
+{
+    public function login($json)
+    {
+        $info = json_decode($json, true);
+        if (!isset($info['s']) && !isset($info['r'])) {
+            //Muestra un error
+            return $result = array(
+                'code' => '400',
+                'typeAlert' => 'warning',
+                'code_msg' => 'Error de conexion con servidor'
+            );
+        } else {
+            //Inicia el loggeo
+            $pass = $info['s'];
+            $user = $info['r'];
+            $data = $this->dbUser($pass, $user);
+            //    print_r($info);
+            return $data;
+        }
+    }
+    public function logout($token)
+    {
+        if (!isset($token['token'])) {
+            //Muestra un error
+            return $result = array(
+                'code' => '400',
+                'typeAlert' => 'warning',
+                'code_msg' => 'Error de conexion con servidor'
+            );
+        } else {
+            $token = $token['token'];
+            $data = $this->outUser($token);
+            return $data;
+        }
+    }
+
+    private function dbUser($psw, $user)
+    {
+        $sql = "CALL userLoggin('$user')";
+        $query = parent::getData($sql);
+
+        if ($query[0]['code'] == 403) {
+            return $query[0];
+        }
+        // /*
+        if ($psw == $query[0]['Password']) {
+            $Logg = array(
+                'code' => "200",
+                'typeAlert' => 'success',
+                'code_msg' => "Bienvenido a los sistemas EUT",
+                'id' => $query[0]['tk']
+            );
+            return $Logg;
+        } else {
+            $naLogg = array(
+                'code' => "401",
+                'typeAlert' => 'danger',
+                'code_msg' => "Usuario No Autorizado verifique sus credenciales"
+            );
+
+            return $naLogg;
+        }
+        // */
+    }
+
+    private function outUser($tk)
+    {
+        $sql = "CALL userLogOut('$tk')";
+        $query = parent::getData($sql);
+        // /*
+        if (empty($query)) {
+            $Logg = array(
+                'code' => "201",
+                'typeAlert' => 'danger',
+                'code_msg' => "Fallo en termino de sesion",
+            );
+            return $Logg;
+        } else {
+            $naLogg = array(
+                'code' => "200",
+                'typeAlert' => 'success',
+                'code_msg' => "Saliendo del sistema: ",
+                'data' => $query[0]
+            );
+
+            return $naLogg;
+        }
+        // */
+    }
+}
