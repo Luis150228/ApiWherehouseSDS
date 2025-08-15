@@ -1,7 +1,70 @@
 PS C:\Users\T000O00> Invoke-WebRequest http://localhost:3000/health | Select-Object -Expand Content
-Invoke-WebRequest : {"ok":false,"error":"(conn:-1, no: 45028, SQLState: HY000) pool timeout: failed to retrieve a connection from pool after 10005ms\n (pool connections: active=0 idle=0 limit=5)"}
+Invoke-WebRequest : {"ok":false,"error":"(conn:-1, no: 45028, SQLState: HY000) pool timeout: failed to retrieve a connection from pool after 20013ms\n (pool connections: active=0 idle=0 limit=5)"}
 At line:1 char:1
 + Invoke-WebRequest http://localhost:3000/health | Select-Object -Expan ...
 + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-WebRequest], WebException
     + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand
+PS C:\Users\T000O00> Test-NetConnection 180.176.105.244 -Port 3306
+
+
+ComputerName     : 180.176.105.244
+RemoteAddress    : 180.176.105.244
+RemotePort       : 3306
+InterfaceAlias   : SERVICE
+SourceAddress    : 180.176.105.244
+TcpTestSucceeded : True
+
+
+
+PS C:\Users\T000O00>
+
+ya confirme el nombre del shema es `eut_reportesbk` y las credenciales son las correctas y uso en otros backend de PHP
+
+este es mi .env
+
+PORT=3000
+
+DB_HOST=180.176.105.244
+DB_PORT=3306
+DB_USER=lrangel
+DB_PASS=F3nixFree15
+DB_NAME=eut_reportesbk
+
+
+PS D:\dev\backend-offline\src> node app.js
+[OK] backend listening on http://localhost:3000
+DB error >>> SqlError: (conn:-1, no: 45028, SQLState: HY000) pool timeout: failed to retrieve a connection from pool after 20013ms
+    (pool connections: active=0 idle=0 limit=5)
+    at module.exports.createError (D:\dev\backend-offline\node_modules\mariadb\lib\misc\errors.js:65:21)
+    at Pool._rejectTimedOutRequest (D:\dev\backend-offline\node_modules\mariadb\lib\pool.js:347:33)
+    at Pool._checkRequestTimeouts (D:\dev\backend-offline\node_modules\mariadb\lib\pool.js:315:14)
+    at listOnTimeout (node:internal/timers:588:17)
+    at process.processTimers (node:internal/timers:523:7) {
+  sqlMessage: 'pool timeout: failed to retrieve a connection from pool after 20013ms\n' +
+    '    (pool connections: active=0 idle=0 limit=5)',
+  sql: null,
+  fatal: false,
+  errno: 45028,
+  sqlState: 'HY000',
+  code: 'ER_GET_CONNECTION_TIMEOUT',
+  [cause]: SqlError: (conn:286572, no: 1045, SQLState: 28000) Access denied for user 'Common12oper'@'localhost' (using password: NO)
+      (pool connections: active=0 idle=0 limit=5)
+      at module.exports.createError (D:\dev\backend-offline\node_modules\mariadb\lib\misc\errors.js:66:10)
+      at PacketNodeEncoded.readError (D:\dev\backend-offline\node_modules\mariadb\lib\io\packet.js:588:19)
+      at Authentication.handshakeResult (D:\dev\backend-offline\node_modules\mariadb\lib\cmd\handshake\authentication.js:187:32)
+      at CachingSha2PasswordAuth.response (D:\dev\backend-offline\node_modules\mariadb\lib\cmd\handshake\auth\caching-sha2-password-auth.js:121:21)
+      at Authentication.onPacketReceive (D:\dev\backend-offline\node_modules\mariadb\lib\cmd\handshake\authentication.js:42:17)
+      at PacketInputStream.receivePacketBasic (D:\dev\backend-offline\node_modules\mariadb\lib\io\packet-input-stream.js:85:9)
+      at PacketInputStream.onData (D:\dev\backend-offline\node_modules\mariadb\lib\io\packet-input-stream.js:135:20)
+      at Socket.emit (node:events:518:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:512:3) {
+    sqlMessage: "Access denied for user 'Common12oper'@'localhost' (using password: NO)",
+    sql: null,
+    fatal: true,
+    errno: 1045,
+    sqlState: '28000',
+    code: 'ER_ACCESS_DENIED_ERROR'
+  }
+}
