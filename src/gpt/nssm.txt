@@ -1,0 +1,12 @@
+nssm install backendeut-node "C:\node\node.exe" "D:\dev\backend-offline\src\app.js"
+
+nssm set backendeut-node Start SERVICE_AUTO_START
+
+sc failure backendeut-node reset= 86400 actions= restart/5000/restart/5000/restart/5000
+sc failureflag backendeut-node 1
+
+nssm start backendeut-node
+
+nssm status backendeut-node
+
+
