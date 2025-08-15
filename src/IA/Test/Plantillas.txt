@@ -1,10 +1,5 @@
-$parts = Get-ChildItem "C:\ruta\node.zip.part*" | Sort-Object Name
-$outFile = "C:\ruta\node.zip"
-$outStream = [System.IO.File]::Create($outFile)
-
-foreach ($part in $parts) {
-    $bytes = [System.IO.File]::ReadAllBytes($part.FullName)
-    $outStream.Write($bytes, 0, $bytes.Length)
+$userPath = [Environment]::GetEnvironmentVariable("Path","User")
+if (-not ($userPath -split ';' | Where-Object { $_ -eq 'C:\node' })) {
+  [Environment]::SetEnvironmentVariable("Path", $userPath + ';C:\node', "User")
 }
-
-$outStream.Close()
+Write-Host "Listo. Abre una nueva consola."
