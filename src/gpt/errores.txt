@@ -1,53 +1,34 @@
-PS C:\Users\T000O00> Invoke-WebRequest http://localhost:3000/health | Select-Object -Expand Content
-{"ok":true,"db_time":"2025-08-15T20:40:28.000Z"}
-PS C:\Users\T000O00> Invoke-WebRequest http://localhost:3000/health | Select-Object -Expand Content
-{"ok":true,"db_time":"2025-08-15T20:54:08.000Z"}
-PS C:\Users\T000O00> sc create backendeut-node binPath= "\"C:\node\node.exe\" \"D:\dev\backend-offline\src\app.js\"" start= auto
->> sc description backendeut-node "Backend de EUT Node (Express + MariaDB)"
-Set-Content : A positional parameter cannot be found that accepts argument 'binPath='.
+PS C:\nssm\src> nssm start backendeut-node
+backendeut-node: Unexpected status SERVICE_PAUSED in response to START control.
+PS C:\nssm\src> netstat -ano | findstr :3000
+netstat : The term 'netstat' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
 At line:1 char:1
-+ sc create backendeut-node binPath= "\"C:\node\node.exe\" \"D:\dev\bac ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidArgument: (:) [Set-Content], ParameterBindingException
-    + FullyQualifiedErrorId : PositionalParameterNotFound,Microsoft.PowerShell.Commands.SetContentCommand
++ netstat -ano | findstr :3000
++ ~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (netstat:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
 
-Set-Content : A positional parameter cannot be found that accepts argument 'Backend de EUT Node (Express + MariaDB)'.
-At line:2 char:1
-+ sc description backendeut-node "Backend de EUT Node (Express + MariaD ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidArgument: (:) [Set-Content], ParameterBindingException
-    + FullyQualifiedErrorId : PositionalParameterNotFound,Microsoft.PowerShell.Commands.SetContentCommand
+PS C:\nssm\src> cmd /c "netstat -ano | findstr :3000"
+cmd : The term 'cmd' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:1 char:1
++ cmd /c "netstat -ano | findstr :3000"
++ ~~~
+    + CategoryInfo          : ObjectNotFound: (cmd:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
 
+PS C:\nssm\src> Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue
 
-en CMD 
-
-C:\Windows\system32>reg add "HKLM\SYSTEM\CurrentControlSet\Services\backendeut-node" /v DelayedAutoStart /t REG_DWORD /d 1 /f
-The operation completed successfully.
-
-C:\Windows\system32>sc failure backendeut-node reset= 86400 actions= restart/5000/restart/5000/restart/5000
-[SC] ChangeServiceConfig2 SUCCESS
-
-C:\Windows\system32>sc failureflag backendeut-node 1
-[SC] ChangeServiceConfig2 SUCCESS
-
-C:\Windows\system32>sc start backendeut-node
-[SC] StartService FAILED 1053:
-
-The service did not respond to the start or control request in a timely fashion.
+LocalAddress                        LocalPort RemoteAddress                       RemotePort State       AppliedSetting OwningProcess
+------------                        --------- -------------                       ---------- -----       -------------- -------------
+::                                  3000      ::                                  0          Listen                     10980
 
 
-C:\Windows\system32>
+PS C:\nssm\src> $pid = (Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue).OwningProcess if ($pid) {Stop-Process -Id $pid -Force}
+At line:1 char:91
++ ... ocalPort 3000 -ErrorAction SilentlyContinue).OwningProcess if ($pid)  ...
++                                                                ~~
+Unexpected token 'if' in expression or statement.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : UnexpectedToken
 
-
-# Obtiene la variable PATH del sistema
-$oldPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
-
-# Agrega C:\nssm al final del PATH si no existe
-if ($oldPath -notlike "*C:\nssm*") {
-    $newPath = "$oldPath;C:\nssm"
-    [Environment]::SetEnvironmentVariable("Path", $newPath, [EnvironmentVariableTarget]::Machine)
-    Write-Host "Ruta C:\nssm agregada al PATH del sistema."
-} else {
-    Write-Host "La ruta C:\nssm ya existe en el PATH."
-}
-
+PS C:\nssm\src>
