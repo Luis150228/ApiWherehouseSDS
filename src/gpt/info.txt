@@ -1,0 +1,7 @@
+PS C:\Users\T000O00> Invoke-WebRequest http://localhost:3000/health | Select-Object -Expand Content
+Invoke-WebRequest : {"ok":false,"error":"(conn:-1, no: 45028, SQLState: HY000) pool timeout: failed to retrieve a connection from pool after 10005ms\n (pool connections: active=0 idle=0 limit=5)"}
+At line:1 char:1
++ Invoke-WebRequest http://localhost:3000/health | Select-Object -Expan ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-WebRequest], WebException
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand
