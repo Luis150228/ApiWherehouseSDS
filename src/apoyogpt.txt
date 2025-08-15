@@ -1,17 +1,21 @@
-No Admin
+Invoke-WebRequest http://localhost:3000/health | Select-Object -Expand Content
 
-$userPath = [Environment]::GetEnvironmentVariable("Path","User")
-if (-not ($userPath -split ';' | Where-Object { $_ -eq 'C:\node' })) {
-  [Environment]::SetEnvironmentVariable("Path", $userPath + ';C:\node', "User")
-}
-Write-Host "Listo. Abre una nueva consola."
+Test-NetConnection 180.176.105.244 -Port 3306
+
+New-NetFirewallRule -DisplayName "Bloquear 3000 externo" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Block
 
 
-Si Admin
+Get-Content D:\backend-offline\logs\out.log -Tail 50
+Get-Content D:\backend-offline\logs\err.log -Tail 50
 
-# PowerShell como Administrador
-$machinePath = [Environment]::GetEnvironmentVariable("Path","Machine")
-if (-not ($machinePath -split ';' | Where-Object { $_ -eq 'C:\node' })) {
-  [Environment]::SetEnvironmentVariable("Path", $machinePath + ';C:\node', "Machine")
-}
-Write-Host "Listo. Cierra y abre PowerShell."
+
+SIN NSSM
+$NODE="C:\node\node.exe"
+$APPDIR="D:\backend-offline"
+$SCRIPT="$APPDIR\src\app.js"
+$SVC="backend-node"
+
+sc create $SVC binPath= "`"$NODE`" `"$SCRIPT`"" start= auto
+sc description $SVC "Backend Node offline (Express+MariaDB)"
+sc start $SVC
+sc failure $SVC reset= 86400 actions= restart/5000/restart/5000/restart/5000
