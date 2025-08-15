@@ -1,8 +1,0 @@
-SELECT TRIM(
-         REPLACE(
-           REPLACE(
-             REPLACE(campo_texto, '\r', ''),
-           '\n', ''),
-         '\t', '')
-       ) AS texto_limpio
-FROM tu_tabla;
