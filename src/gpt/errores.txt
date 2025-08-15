@@ -37,3 +37,17 @@ The service did not respond to the start or control request in a timely fashion.
 
 
 C:\Windows\system32>
+
+
+# Obtiene la variable PATH del sistema
+$oldPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+
+# Agrega C:\nssm al final del PATH si no existe
+if ($oldPath -notlike "*C:\nssm*") {
+    $newPath = "$oldPath;C:\nssm"
+    [Environment]::SetEnvironmentVariable("Path", $newPath, [EnvironmentVariableTarget]::Machine)
+    Write-Host "Ruta C:\nssm agregada al PATH del sistema."
+} else {
+    Write-Host "La ruta C:\nssm ya existe en el PATH."
+}
+
