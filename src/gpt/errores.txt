@@ -1,0 +1,19 @@
+PS C:\Users\T000O00> Invoke-WebRequest http://localhost:3000/health | Select-Object -Expand Content
+{"ok":true,"db_time":"2025-08-15T20:40:28.000Z"}
+PS C:\Users\T000O00> Invoke-WebRequest http://localhost:3000/health | Select-Object -Expand Content
+{"ok":true,"db_time":"2025-08-15T20:54:08.000Z"}
+PS C:\Users\T000O00> sc create backendeut-node binPath= "\"C:\node\node.exe\" \"D:\dev\backend-offline\src\app.js\"" start= auto
+>> sc description backendeut-node "Backend de EUT Node (Express + MariaDB)"
+Set-Content : A positional parameter cannot be found that accepts argument 'binPath='.
+At line:1 char:1
++ sc create backendeut-node binPath= "\"C:\node\node.exe\" \"D:\dev\bac ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Set-Content], ParameterBindingException
+    + FullyQualifiedErrorId : PositionalParameterNotFound,Microsoft.PowerShell.Commands.SetContentCommand
+
+Set-Content : A positional parameter cannot be found that accepts argument 'Backend de EUT Node (Express + MariaDB)'.
+At line:2 char:1
++ sc description backendeut-node "Backend de EUT Node (Express + MariaD ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Set-Content], ParameterBindingException
+    + FullyQualifiedErrorId : PositionalParameterNotFound,Microsoft.PowerShell.Commands.SetContentCommand
