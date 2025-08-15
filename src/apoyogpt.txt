@@ -1,0 +1,17 @@
+No Admin
+
+$userPath = [Environment]::GetEnvironmentVariable("Path","User")
+if (-not ($userPath -split ';' | Where-Object { $_ -eq 'C:\node' })) {
+  [Environment]::SetEnvironmentVariable("Path", $userPath + ';C:\node', "User")
+}
+Write-Host "Listo. Abre una nueva consola."
+
+
+Si Admin
+
+# PowerShell como Administrador
+$machinePath = [Environment]::GetEnvironmentVariable("Path","Machine")
+if (-not ($machinePath -split ';' | Where-Object { $_ -eq 'C:\node' })) {
+  [Environment]::SetEnvironmentVariable("Path", $machinePath + ';C:\node', "Machine")
+}
+Write-Host "Listo. Cierra y abre PowerShell."
