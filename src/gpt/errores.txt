@@ -1,3 +1,8 @@
+PS C:\nssm\src> nssm install backendeut-node "C:\node\node.exe" "D:\dev\backend-offline\src\app.js"
+Service "backendeut-node" installed successfully!
+PS C:\nssm\src> nssm set backendeut-node Start SERVICE_AUTO_START
+Set parameter "Start" for service "backendeut-node".
+PS C:\nssm\src> sc failure backendeut-node reset= 86400 actions= restart/5000/restart/5000/restart/5000
 PS C:\nssm\src> nssm start backendeut-node
 backendeut-node: Unexpected status SERVICE_PAUSED in response to START control.
 PS C:\nssm\src> netstat -ano | findstr :3000
