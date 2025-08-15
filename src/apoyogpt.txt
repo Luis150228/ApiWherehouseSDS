@@ -19,3 +19,31 @@ sc create $SVC binPath= "`"$NODE`" `"$SCRIPT`"" start= auto
 sc description $SVC "Backend Node offline (Express+MariaDB)"
 sc start $SVC
 sc failure $SVC reset= 86400 actions= restart/5000/restart/5000/restart/5000
+
+1. Crear el servicio
+sc create backendeut-node binPath= "\"C:\node\node.exe\" \"D:\dev\backend-offline\src\app.js\"" start= auto
+sc description backendeut-node "Backend de EUT Node (Express + MariaDB)"
+
+2. Hacer que inicie un poco después del arranque
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\backendeut-node" /v DelayedAutoStart /t REG_DWORD /d 1 /f
+
+3. Configurar para que se reinicie si falla
+sc failure backendeut-node reset= 86400 actions= restart/5000/restart/5000/restart/5000
+sc failureflag backendeut-node 1
+
+4. Iniciarlo Por Primera vez
+sc start backendeut-node
+
+Si quieres detenerlo:
+sc stop backendeut-node
+
+
+5. Verificar que está corriendo
+sc query backendeut-node
+
+Cómo quitarlo si lo necesitas
+sc stop backendeut-node
+sc delete backendeut-node
+
+
+
