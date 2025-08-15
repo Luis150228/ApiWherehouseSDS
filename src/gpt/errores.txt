@@ -17,3 +17,23 @@ At line:2 char:1
 + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : InvalidArgument: (:) [Set-Content], ParameterBindingException
     + FullyQualifiedErrorId : PositionalParameterNotFound,Microsoft.PowerShell.Commands.SetContentCommand
+
+
+en CMD 
+
+C:\Windows\system32>reg add "HKLM\SYSTEM\CurrentControlSet\Services\backendeut-node" /v DelayedAutoStart /t REG_DWORD /d 1 /f
+The operation completed successfully.
+
+C:\Windows\system32>sc failure backendeut-node reset= 86400 actions= restart/5000/restart/5000/restart/5000
+[SC] ChangeServiceConfig2 SUCCESS
+
+C:\Windows\system32>sc failureflag backendeut-node 1
+[SC] ChangeServiceConfig2 SUCCESS
+
+C:\Windows\system32>sc start backendeut-node
+[SC] StartService FAILED 1053:
+
+The service did not respond to the start or control request in a timely fashion.
+
+
+C:\Windows\system32>

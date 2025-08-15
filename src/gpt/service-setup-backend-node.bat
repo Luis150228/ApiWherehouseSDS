@@ -1,10 +1,10 @@
-@echo off
+﻿@echo off
 REM ==========================================================
 REM  Backend Node Service Setup (sin NSSM) - ejecutar como Admin
 REM  Edita SOLO las variables de esta sección según tus rutas.
 REM ==========================================================
 
-set "SVC=backend-node"
+set "SVC=backendeut-node"
 set "NODE=C:\node\node.exe"
 set "SCRIPT=D:\dev\backend-offline\src\app.js"
 
