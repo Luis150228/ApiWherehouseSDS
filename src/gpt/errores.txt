@@ -1,3 +1,5 @@
 {"ok":false,"error":"(conn:-1, no: 45028, SQLState: HY000) pool timeout: failed to retrieve a connection from pool after 20004ms\n    (pool connections: active=0 idle=0 limit=5)"}
 
 git commit --amend --reset-author
+
+$pid = (Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue).OwningProcess; if ($pid) { Get-Process -Id $pid }
