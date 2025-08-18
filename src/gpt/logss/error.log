@@ -1,0 +1,102 @@
+[Thu Aug 14 13:09:52.015009 2025] [php:error] [pid 5384:tid 1236] [client 180.51.155.168:63193] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '34454' for key 'almacen_invasignado.PRIMARY' in D:\\dev\\santec_hardware_api\\conexion\\cnx.php:47\nStack trace:\n#0 D:\\dev\\santec_hardware_api\\conexion\\cnx.php(47): PDO->query()\n#1 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(390): cnx->getData()\n#2 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(124): inv->fnAsigStock()\n#3 D:\\dev\\santec_hardware_api\\rutes\\invAsigStock.php(20): inv->asignarStock()\n#4 {main}\n  thrown in D:\\dev\\santec_hardware_api\\conexion\\cnx.php on line 47, referer: http://180.176.105.244/eut_activos/apps/asig240529.html
+[Thu Aug 14 16:44:29.444246 2025] [php:error] [pid 5384:tid 1240] [client 180.51.155.168:61880] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '74877' for key 'almacen_invasignado.PRIMARY' in D:\\dev\\santec_hardware_api\\conexion\\cnx.php:47\nStack trace:\n#0 D:\\dev\\santec_hardware_api\\conexion\\cnx.php(47): PDO->query()\n#1 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(390): cnx->getData()\n#2 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(124): inv->fnAsigStock()\n#3 D:\\dev\\santec_hardware_api\\rutes\\invAsigStock.php(20): inv->asignarStock()\n#4 {main}\n  thrown in D:\\dev\\santec_hardware_api\\conexion\\cnx.php on line 47, referer: http://180.176.105.244/eut_activos/apps/asig240529.html
+[Thu Aug 14 16:48:17.373387 2025] [php:error] [pid 5384:tid 1276] [client 180.51.155.168:61981] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '74320' for key 'almacen_invasignado.PRIMARY' in D:\\dev\\santec_hardware_api\\conexion\\cnx.php:47\nStack trace:\n#0 D:\\dev\\santec_hardware_api\\conexion\\cnx.php(47): PDO->query()\n#1 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(390): cnx->getData()\n#2 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(124): inv->fnAsigStock()\n#3 D:\\dev\\santec_hardware_api\\rutes\\invAsigStock.php(20): inv->asignarStock()\n#4 {main}\n  thrown in D:\\dev\\santec_hardware_api\\conexion\\cnx.php on line 47, referer: http://180.176.105.244/eut_activos/apps/asig240529.html
+[Thu Aug 14 16:58:53.761514 2025] [php:error] [pid 5384:tid 1240] [client 180.51.155.168:59367] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '5585' for key 'almacen_invasignado.PRIMARY' in D:\\dev\\santec_hardware_api\\conexion\\cnx.php:47\nStack trace:\n#0 D:\\dev\\santec_hardware_api\\conexion\\cnx.php(47): PDO->query()\n#1 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(390): cnx->getData()\n#2 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(124): inv->fnAsigStock()\n#3 D:\\dev\\santec_hardware_api\\rutes\\invAsigStock.php(20): inv->asignarStock()\n#4 {main}\n  thrown in D:\\dev\\santec_hardware_api\\conexion\\cnx.php on line 47, referer: http://180.176.105.244/eut_activos/apps/asig240529.html
+[Thu Aug 14 17:13:45.583431 2025] [php:error] [pid 5384:tid 1256] [client 180.51.155.168:59733] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '74325' for key 'almacen_invasignado.PRIMARY' in D:\\dev\\santec_hardware_api\\conexion\\cnx.php:47\nStack trace:\n#0 D:\\dev\\santec_hardware_api\\conexion\\cnx.php(47): PDO->query()\n#1 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(390): cnx->getData()\n#2 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(124): inv->fnAsigStock()\n#3 D:\\dev\\santec_hardware_api\\rutes\\invAsigStock.php(20): inv->asignarStock()\n#4 {main}\n  thrown in D:\\dev\\santec_hardware_api\\conexion\\cnx.php on line 47, referer: http://180.176.105.244/eut_activos/apps/asig240529.html
+[Fri Aug 15 09:46:06.432207 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00424: Parent: Received restart signal -- Restarting the server.
+[Fri Aug 15 09:46:06.540206 2025] [ssl:warn] [pid 3204:tid 504] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Fri Aug 15 09:46:06.568205 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00455: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.3.1 configured -- resuming normal operations
+[Fri Aug 15 09:46:06.568205 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00456: Apache Lounge VS17 Server built: Oct 18 2023 13:03:18
+ Fri Aug 15 09:46:06.568205 2025] [core:notice] [pid 3204:tid 504] AH00094: Command line: 'C:\\Apache24\\bin\\httpd.exe -d C:/Apache24'
+[Fri Aug 15 09:46:06.661360 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00418: Parent: Created child process 7328
+[Fri Aug 15 09:46:07.115972 2025] [ssl:warn] [pid 7328:tid 524] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Fri Aug 15 09:46:07.445283 2025] [mpm_winnt:notice] [pid 7328:tid 524] AH00354: Child: Starting 64 worker threads.
+[Fri Aug 15 09:46:09.159761 2025] [mpm_winnt:notice] [pid 5384:tid 520] AH00364: Child: All worker threads have exited.
+[Fri Aug 15 09:46:13.977282 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00424: Parent: Received restart signal -- Restarting the server.
+[Fri Aug 15 09:46:14.018284 2025] [ssl:warn] [pid 3204:tid 504] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Fri Aug 15 09:46:14.025283 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00455: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.3.1 configured -- resuming normal operations
+[Fri Aug 15 09:46:14.025283 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00456: Apache Lounge VS17 Server built: Oct 18 2023 13:03:18
+[Fri Aug 15 09:46:14.025283 2025] [core:notice] [pid 3204:tid 504] AH00094: Command line: 'C:\\Apache24\\bin\\httpd.exe -d C:/Apache24'
+[Fri Aug 15 09:46:14.029284 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00418: Parent: Created child process 9800
+[Fri Aug 15 09:46:14.450204 2025] [ssl:warn] [pid 9800:tid 524] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Fri Aug 15 09:46:14.983431 2025] [mpm_winnt:notice] [pid 9800:tid 524] AH00354: Child: Starting 64 worker threads.
+[Fri Aug 15 09:46:15.985996 2025] [mpm_winnt:notice] [pid 7328:tid 524] AH00364: Child: All worker threads have exited.
+[Fri Aug 15 10:35:24.672403 2025] [php:error] [pid 9800:tid 1272] [client 180.176.160.95:54592] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '32635' for key 'almacen_invasignado.PRIMARY' in D:\\dev\\santec_hardware_api\\conexion\\cnx.php:47\nStack trace:\n#0 D:\\dev\\santec_hardware_api\\conexion\\cnx.php(47): PDO->query()\n#1 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(390): cnx->getData()\n#2 D:\\dev\\santec_hardware_api\\classes\\inv.class.php(124): inv->fnAsigStock()\n#3 D:\\dev\\santec_hardware_api\\rutes\\invAsigStock.php(20): inv->asignarStock()\n#4 {main}\n  thrown in D:\\dev\\santec_hardware_api\\conexion\\cnx.php on line 47, referer: http://180.176.105.244/eut_activos/apps/asig240529.html
+[Fri Aug 15 13:56:05.887716 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00424: Parent: Received restart signal -- Restarting the server.
+[Fri Aug 15 13:56:05.950218 2025] [ssl:warn] [pid 3204:tid 504] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Fri Aug 15 13:56:05.950218 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00455: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.3.1 configured -- resuming normal operations
+[Fri Aug 15 13:56:05.950218 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00456: Apache Lounge VS17 Server built: Oct 18 2023 13:03:18
+[Fri Aug 15 13:56:05.950218 2025] [core:notice] [pid 3204:tid 504] AH00094: Command line: 'C:\\Apache24\\bin\\httpd.exe -d C:/Apache24'
+[Fri Aug 15 13:56:05.965841 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00418: Parent: Created child process 10932
+[Fri Aug 15 13:56:06.387717 2025] [ssl:warn] [pid 10932:tid 528] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Fri Aug 15 13:56:06.904601 2025] [mpm_winnt:notice] [pid 10932:tid 528] AH00354: Child: Starting 64 worker threads.
+[Fri Aug 15 13:56:09.110572 2025] [mpm_winnt:notice] [pid 9800:tid 524] AH00364: Child: All worker threads have exited.
+[Fri Aug 15 14:02:49.463399 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00424: Parent: Received restart signal -- Restarting the server.
+[Fri Aug 15 14:02:49.551937 2025] [ssl:warn] [pid 3204:tid 504] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Fri Aug 15 14:02:49.562938 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00455: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.3.1 configured -- resuming normal operations
+[Fri Aug 15 14:02:49.562938 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00456: Apache Lounge VS17 Server built: Oct 18 2023 13:03:18
+[Fri Aug 15 14:02:49.562938 2025] [core:notice] [pid 3204:tid 504] AH00094: Command line: 'C:\\Apache24\\bin\\httpd.exe -d C:/Apache24'
+[Fri Aug 15 14:02:49.566935 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00418: Parent: Created child process 2008
+[Fri Aug 15 14:02:50.052008 2025] [ssl:warn] [pid 2008:tid 544] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Fri Aug 15 14:02:50.464638 2025] [mpm_winnt:notice] [pid 2008:tid 544] AH00354: Child: Starting 64 worker threads.
+[Fri Aug 15 14:02:56.380172 2025] [mpm_winnt:notice] [pid 10932:tid 528] AH00364: Child: All worker threads have exited.
+[Fri Aug 15 14:27:26.026412 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00424: Parent: Received restart signal -- Restarting the server.
+[Fri Aug 15 14:27:26.087415 2025] [ssl:warn] [pid 3204:tid 504] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Fri Aug 15 14:27:26.095417 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00455: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.3.1 configured -- resuming normal operations
+[Fri Aug 15 14:27:26.095417 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00456: Apache Lounge VS17 Server built: Oct 18 2023 13:03:18
+[Fri Aug 15 14:27:26.095417 2025] [core:notice] [pid 3204:tid 504] AH00094: Command line: 'C:\\Apache24\\bin\\httpd.exe -d C:/Apache24'
+[Fri Aug 15 14:27:26.100413 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00418: Parent: Created child process 8452
+[Fri Aug 15 14:27:26.533775 2025] [ssl:warn] [pid 8452:tid 524] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Fri Aug 15 14:27:27.028190 2025] [mpm_winnt:notice] [pid 8452:tid 524] AH00354: Child: Starting 64 worker threads.
+[Fri Aug 15 14:27:31.057731 2025] [mpm_winnt:notice] [pid 2008:tid 544] AH00364: Child: All worker threads have exited.
+[Mon Aug 18 09:51:49.485131 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00424: Parent: Received restart signal -- Restarting the server.
+[Mon Aug 18 09:51:49.547630 2025] [ssl:warn] [pid 3204:tid 504] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Mon Aug 18 09:51:49.547630 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00455: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.3.1 configured -- resuming normal operations
+[Mon Aug 18 09:51:49.547630 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00456: Apache Lounge VS17 Server built: Oct 18 2023 13:03:18
+[Mon Aug 18 09:51:49.547630 2025] [core:notice] [pid 3204:tid 504] AH00094: Command line: 'C:\\Apache24\\bin\\httpd.exe -d C:/Apache24'
+[Mon Aug 18 09:51:49.642162 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00418: Parent: Created child process 8648
+[Mon Aug 18 09:51:50.096225 2025] [ssl:warn] [pid 8648:tid 524] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Mon Aug 18 09:51:50.502475 2025] [mpm_winnt:notice] [pid 8648:tid 524] AH00354: Child: Starting 64 worker threads.
+[Mon Aug 18 09:51:55.439459 2025] [mpm_winnt:notice] [pid 8452:tid 524] AH00364: Child: All worker threads have exited.
+[Mon Aug 18 11:35:52.164351 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00422: Parent: Received shutdown signal -- Shutting down the server.
+[Mon Aug 18 11:35:56.574137 2025] [mpm_winnt:notice] [pid 8648:tid 524] AH00364: Child: All worker threads have exited.
+[Mon Aug 18 11:35:56.590822 2025] [mpm_winnt:notice] [pid 3204:tid 504] AH00430: Parent: Child process 8648 exited successfully.
+[Mon Aug 18 11:35:57.334641 2025] [ssl:warn] [pid 10164:tid 532] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Mon Aug 18 11:35:57.365890 2025] [mpm_winnt:notice] [pid 10164:tid 532] AH00455: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.3.1 configured -- resuming normal operations
+[Mon Aug 18 11:35:57.365890 2025] [mpm_winnt:notice] [pid 10164:tid 532] AH00456: Apache Lounge VS17 Server built: Oct 18 2023 13:03:18
+[Mon Aug 18 11:35:57.365890 2025] [core:notice] [pid 10164:tid 532] AH00094: Command line: 'C:\\Apache24\\bin\\httpd.exe -d C:/Apache24'
+[Mon Aug 18 11:35:57.365890 2025] [mpm_winnt:notice] [pid 10164:tid 532] AH00418: Parent: Created child process 5600
+[Mon Aug 18 11:35:57.801298 2025] [ssl:warn] [pid 5600:tid 528] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+[Mon Aug 18 11:35:57.832548 2025] [mpm_winnt:notice] [pid 5600:tid 528] AH00354: Child: Starting 64 worker threads.
+[Mon Aug 18 11:43:52.694448 2025] [mpm_winnt:notice] [pid 10164:tid 532] AH00422: Parent: Received shutdown signal -- Shutting down the server.
+[Mon Aug 18 11:44:13.861298 2025] [mpm_winnt:notice] [pid 5600:tid 528] AH00364: Child: All worker threads have exited.
+[Mon Aug 18 11:44:13.876923 2025] [mpm_winnt:notice] [pid 10164:tid 532] AH00430: Parent: Child process 5600 exited successfully.
+[Mon Aug 18 11:44:42.076301 2025] [ssl:warn] [pid 3256:tid 504] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+PHP Warning:  PHP Startup: Unable to load dynamic library 'mysqli' (tried: ext\\mysqli (The specified module could not be found), ext\\php_mysqli.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'pdo_mysql' (tried: ext\\pdo_mysql (The specified module could not be found), ext\\php_pdo_mysql.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'sockets' (tried: ext\\sockets (The specified module could not be found), ext\\php_sockets.dll (The specified module could not be found)) in Unknown on line 0
+[Mon Aug 18 11:44:42.357556 2025] [mpm_winnt:notice] [pid 3256:tid 504] AH00455: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.3.1 configured -- resuming normal operations
+[Mon Aug 18 11:44:42.357556 2025] [mpm_winnt:notice] [pid 3256:tid 504] AH00456: Apache Lounge VS17 Server built: Oct 18 2023 13:03:18
+[Mon Aug 18 11:44:42.357556 2025] [core:notice] [pid 3256:tid 504] AH00094: Command line: 'C:\\Apache24\\bin\\httpd.exe -d C:/Apache24'
+[Mon Aug 18 11:44:42.357556 2025] [mpm_winnt:notice] [pid 3256:tid 504] AH00418: Parent: Created child process 5524
+[Mon Aug 18 11:44:43.420054 2025] [ssl:warn] [pid 5524:tid 520] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+PHP Warning:  PHP Startup: Unable to load dynamic library 'mysqli' (tried: ext\\mysqli (The specified module could not be found), ext\\php_mysqli.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'pdo_mysql' (tried: ext\\pdo_mysql (The specified module could not be found), ext\\php_pdo_mysql.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'sockets' (tried: ext\\sockets (The specified module could not be found), ext\\php_sockets.dll (The specified module could not be found)) in Unknown on line 0
+[Mon Aug 18 11:44:43.482556 2025] [mpm_winnt:notice] [pid 5524:tid 520] AH00354: Child: Starting 64 worker threads.
+[Mon Aug 18 12:07:47.835612 2025] [mpm_winnt:notice] [pid 3256:tid 504] AH00422: Parent: Received shutdown signal -- Shutting down the server.
+[Mon Aug 18 12:07:49.853155 2025] [mpm_winnt:notice] [pid 5524:tid 520] AH00364: Child: All worker threads have exited.
+[Mon Aug 18 12:07:49.868782 2025] [mpm_winnt:notice] [pid 3256:tid 504] AH00430: Parent: Child process 5524 exited successfully.
+[Mon Aug 18 12:07:50.842892 2025] [ssl:warn] [pid 768:tid 508] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+PHP Warning:  PHP Startup: Unable to load dynamic library 'mysqli' (tried: ext\\mysqli (The specified module could not be found), ext\\php_mysqli.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'pdo_mysql' (tried: ext\\pdo_mysql (The specified module could not be found), ext\\php_pdo_mysql.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'sockets' (tried: ext\\sockets (The specified module could not be found), ext\\php_sockets.dll (The specified module could not be found)) in Unknown on line 0
+[Mon Aug 18 12:07:50.874152 2025] [mpm_winnt:notice] [pid 768:tid 508] AH00455: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.3.1 configured -- resuming normal operations
+[Mon Aug 18 12:07:50.874152 2025] [mpm_winnt:notice] [pid 768:tid 508] AH00456: Apache Lounge VS17 Server built: Oct 18 2023 13:03:18
+[Mon Aug 18 12:07:50.874152 2025] [core:notice] [pid 768:tid 508] AH00094: Command line: 'C:\\Apache24\\bin\\httpd.exe -d C:/Apache24'
+[Mon Aug 18 12:07:50.874152 2025] [mpm_winnt:notice] [pid 768:tid 508] AH00418: Parent: Created child process 10280
+[Mon Aug 18 12:07:51.311654 2025] [ssl:warn] [pid 10280:tid 524] AH01873: Init: Session Cache is not configured [hint: SSLSessionCache]
+PHP Warning:  PHP Startup: Unable to load dynamic library 'mysqli' (tried: ext\\mysqli (The specified module could not be found), ext\\php_mysqli.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'pdo_mysql' (tried: ext\\pdo_mysql (The specified module could not be found), ext\\php_pdo_mysql.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'sockets' (tried: ext\\sockets (The specified module could not be found), ext\\php_sockets.dll (The specified module could not be found)) in Unknown on line 0
+[Mon Aug 18 12:07:51.327277 2025] [mpm_winnt:notice] [pid 10280:tid 524] AH00354: Child: Starting 64 worker threads.
