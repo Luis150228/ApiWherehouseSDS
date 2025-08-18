@@ -10,3 +10,139 @@ nssm start backendeut-node
 nssm status backendeut-node
 
 
+/***************************************/
+Start-Process PowerShell -Verb RunAs
+
+
+# Detén el servicio NSSM
+nssm stop backendeut-node
+
+# Espera un segundo
+Start-Sleep -Seconds 1
+
+# Si quedó algún node colgado en 3000, mátalo
+$procId = (Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue).OwningProcess
+if ($procId) { Stop-Process -Id $procId -Force }
+
+# (Plan B si siguiera negándose)
+# taskkill /PID 12212 /F /T
+
+Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue
+
+nssm start backendeut-node
+nssm status backendeut-node   # debe decir SERVICE_RUNNING
+
+Invoke-WebRequest http://localhost:3000/debug/env | Select-Object -Expand Content
+Invoke-WebRequest http://localhost:3000/health | Select-Object -Expand Content
+
+Get-Content D:\dev\backend-offline\logs\out.log -Tail 80
+Get-Content D:\dev\backend-offline\logs\err.log -Tail 80
+
+
+/*****************************************/
+
+restart-backendeut.ps1
+
+param(
+  [string]$Service   = "backendeut-node",
+  [int]   $Port      = 3000,
+  [string]$HealthUrl = "http://localhost:3000/health",
+  [int]   $TimeoutSec = 10
+)
+
+function Write-Step($msg) { Write-Host "[*] $msg" -ForegroundColor Cyan }
+function Write-Ok($msg)   { Write-Host "[OK] $msg" -ForegroundColor Green }
+function Write-Warn($msg) { Write-Host "[!] $msg" -ForegroundColor Yellow }
+function Write-Err($msg)  { Write-Host "[X] $msg" -ForegroundColor Red }
+
+# 0) Requiere admin
+$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+  Write-Err "Ejecuta esta consola como Administrador."
+  exit 1
+}
+
+# 1) Detener servicio (intenta con NSSM y con SC)
+Write-Step "Deteniendo servicio $Service ..."
+try {
+  & nssm stop $Service 2>$null
+} catch {}
+Start-Sleep -Milliseconds 800
+try {
+  sc.exe stop $Service | Out-Null
+} catch {}
+Start-Sleep -Seconds 1
+
+# 2) Liberar puerto si quedó algo colgado
+Write-Step "Verificando procesos en el puerto $Port ..."
+$procs = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue | Select-Object -Expand OwningProcess -Unique
+if ($procs) {
+  $procs | ForEach-Object {
+    try {
+      $p = Get-Process -Id $_ -ErrorAction SilentlyContinue
+      if ($p) {
+        Write-Warn ("Matando PID {0} ({1}) que ocupa :{2}" -f $p.Id, $p.ProcessName, $Port)
+        Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+      }
+    } catch {}
+  }
+  Start-Sleep -Milliseconds 500
+}
+
+# 3) Confirmar que el puerto quedó libre
+$left = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
+if ($left) {
+  Write-Err "El puerto $Port sigue ocupado. Reintenta o cambia el puerto en tu app."
+  $left | Format-Table -AutoSize
+  exit 2
+}
+Write-Ok "Puerto $Port libre."
+
+# 4) Iniciar servicio (NSSM; fallback SC)
+Write-Step "Iniciando servicio $Service ..."
+$started = $false
+try {
+  & nssm start $Service 2>$null
+  $started = $true
+} catch {}
+if (-not $started) {
+  try { sc.exe start $Service | Out-Null; $started = $true } catch {}
+}
+Start-Sleep -Seconds 1
+
+# 5) Estado
+try {
+  $status = (& nssm status $Service 2>$null)
+  if (-not $status) { $status = (Get-Service $Service -ErrorAction SilentlyContinue).Status }
+  Write-Ok ("Estado: {0}" -f $status)
+} catch {
+  Write-Warn "No pude leer estado por NSSM; verifico con Get-Service..."
+  (Get-Service $Service).Status
+}
+
+# 6) Probar /health
+Write-Step "Probando $HealthUrl (timeout ${TimeoutSec}s) ..."
+try {
+  $resp = Invoke-WebRequest -Uri $HealthUrl -TimeoutSec $TimeoutSec -UseBasicParsing
+  Write-Ok "HTTP $($resp.StatusCode)"
+  $content = $resp.Content
+  if ($content.Length -gt 0) { $content } else { Write-Warn "Respuesta vacía" }
+} catch {
+  Write-Err ("Fallo al consultar /health: {0}" -f $_.Exception.Message)
+  Write-Warn "Revisa logs:"
+  Write-Warn "Get-Content D:\dev\backend-offline\logs\out.log -Tail 100"
+  Write-Warn "Get-Content D:\dev\backend-offline\logs\err.log -Tail 100"
+  exit 3
+}
+
+Write-Ok "Listo."
+
+/*************************
+
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\restart-backendeut.ps1
+
+
+Por si es necesario reiniciar
+
+.\restart-backendeut.ps1 -Service "backendeut-node" -Port 3000 -HealthUrl "http://localhost:3000/health"
