@@ -1,8 +1,69 @@
-for (const btnOrderGeneric of btnsOrderGenerics) {
-	btnOrderGeneric.addEventListener('click', e =>{
-		const dataSend = e.target.dataset
-		console.log(dataSend);
-	})
+// Asumiendo que ya tienes esto:
+const btnsOrderGenerics = document.querySelectorAll('.btn-order-generic');
+
+for (const btn of btnsOrderGenerics) {
+  btn.addEventListener('click', async (e) => {
+    const el = e.currentTarget;            // <- ESTE es el botón correcto
+    const dataSend = { ...el.dataset };    // copia limpia de data-*
+    if (el.dataset.busy === '1') return;   // evita doble click
+
+    showBtnSpinner(el, 'Procesando…');
+
+    try {
+      // TODO: tu lógica. Ejemplo simulado:
+      // await fetch('/api/orden', { method: 'POST', body: JSON.stringify(dataSend) });
+      await fakeDelay(1200);
+      console.log('payload:', dataSend);
+    } catch (err) {
+      console.error(err);
+      // opcional: cambiar el texto si hubo error
+      // showBtnSpinner(el, 'Error'); setTimeout(() => hideBtnSpinner(el), 1200);
+    } finally {
+      hideBtnSpinner(el);
+    }
+  });
 }
 
-quiero poder identificar al boton al que le di click para por ejemplo poner un spiner en lo que procesa la orden es posible con JS Vainilla
+// Helpers spinner:
+function showBtnSpinner(btn, text = 'Procesando…') {
+  btn.dataset.busy = '1';
+  btn.disabled = true;
+  // guarda el contenido anterior para restaurar luego
+  if (!btn.dataset.prevHtml) btn.dataset.prevHtml = btn.innerHTML;
+  btn.innerHTML = `<span class="mini-spinner" aria-hidden="true"></span> ${text}`;
+}
+
+function hideBtnSpinner(btn) {
+  btn.disabled = false;
+  btn.innerHTML = btn.dataset.prevHtml || 'Listo';
+  btn.dataset.busy = '0';
+  delete btn.dataset.prevHtml;
+}
+
+// util de demo
+function fakeDelay(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+/*********************************************************************/
+.mini-spinner{
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: .5em;
+  border: .15em solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  vertical-align: -0.15em;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+
+/*********************************************************************/
+
+function showBtnSpinner(btn, text = 'Procesando…') {
+  btn.dataset.busy = '1';
+  btn.disabled = true;
+  if (!btn.dataset.prevHtml) btn.dataset.prevHtml = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>${text}`;
+}
