@@ -1,0 +1,57 @@
+/* === Aviso más oscuro === */
+.report-card{
+  background: #242424;         /* antes #fff */
+  color: #f1f1f1;              /* texto claro */
+  border: 1px solid #333;      /* borde más oscuro */
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+}
+.report-header{
+  background: #2f2f2f;         /* cabecera más oscura */
+  border-bottom: 1px solid #3a3a3a;
+}
+.report-header .title{ color:#fff; }
+
+/* etiquetas del cuerpo */
+.report-body .label,
+.report-body .label-aviso{
+  color: #d6d6d6;
+}
+
+/* celdas de valor */
+.report-body .value,
+.report-body .value-aviso{
+  background: #1e1e1e;         /* input oscuro */
+  color: #ffffff;
+  border: 1px solid #3a3a3a;
+}
+
+/* modo editable */
+.report-body .value.editable,
+.report-body .value-aviso.editable{
+  border: 1px dashed #5a5a5a;
+}
+.report-body .value.editable:focus,
+.report-body .value-aviso.editable:focus{
+  border-color: #c62828;                    /* rojo Santander */
+  box-shadow: 0 0 0 2px rgba(198,40,40,.18) inset;
+}
+
+/* placeholder en contenteditable */
+.report-body .value.editable:empty:before,
+.report-body .value-aviso.editable:empty:before{
+  color: #9a9a9a;
+}
+
+/* pie del aviso */
+.report-footer{
+  background: #2a2a2a;
+  border-top: 1px solid #3a3a3a;
+}
+.report-footer .sd{ color:#e1e1e1; }
+
+/* slots de logos (ligeramente gris para que resalten) */
+.slot-logo-header,
+.slot-brand-footer{
+  background:#2b2b2b;
+  border-color:#4a4a4a;
+}
