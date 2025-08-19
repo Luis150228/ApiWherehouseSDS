@@ -1,104 +1,290 @@
-/* ===== Tema claro EUT (gris) sobre Bootstrap 5.3 ===== */
-[data-bs-theme="blue"]{
-  /* Base */
-  --bs-body-bg: #f7f7f8;
-  --bs-body-color: #2b2b2b;
-  --bs-border-color: #dcdcdc;
+/* body {
+    background: #121212;
+    color: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+} */
 
-  /* Links */
-  --bs-link-color: #b40000;
-  --bs-link-hover-color: #8e0000;
+[data-bs-theme="blue"] {
+  --bs-body-color: #494848;
+  --bs-body-color-rgb: #494848;
+  --bs-body-bg: var(--bs-blue);
+  --bs-body-bg-rgb: #{to-rgb($blue)};
+  --bs-tertiary-bg: #{$blue-600};
 
-  /* Navbar (usa #676767 como pediste) */
-  --bs-navbar-bg: #676767;
-  --bs-navbar-color: #ffffff;
-  --bs-navbar-hover-color: #ffffff;
-  --bs-navbar-active-color: #ffffff;
-  --bs-navbar-brand-color: #ffffff;
-  --bs-navbar-brand-hover-color: #ffffff;
-  --bs-nav-link-color: #ffffff;
-  --bs-nav-link-hover-color: #ffffff;
+  .dropdown-menu {
+    --bs-dropdown-bg: #{mix($blue-500, $blue-600)};
+    --bs-dropdown-link-active-bg: #{$blue-700};
+  }
 
-  /* Cards */
-  --bs-card-bg: #ffffff;
-  --bs-card-color: #2b2b2b;
-  --bs-card-cap-bg: #efefef;
-  --bs-card-border-color: #e5e5e5;
-
-  /* Botones “rojo Santander” */
-  --eut-btn-red: #c62828;
-  --eut-btn-red-hover: #a91f1f;
-  --eut-btn-red-active: #8c1a1a;
+  .btn-secondary {
+    --bs-btn-bg: #{mix($gray-600, $blue-400, .5)};
+    --bs-btn-border-color: #{rgba($white, .25)};
+    --bs-btn-hover-bg: #{darken(mix($gray-600, $blue-400, .5), 5%)};
+    --bs-btn-hover-border-color: #{rgba($white, .25)};
+    --bs-btn-active-bg: #{darken(mix($gray-600, $blue-400, .5), 10%)};
+    --bs-btn-active-border-color: #{rgba($white, .5)};
+    --bs-btn-focus-border-color: #{rgba($white, .5)};
+    --bs-btn-focus-box-shadow: 0 0 0 .25rem rgba(255, 255, 255, .2);
+  }
 }
 
-/* Navbar: aplica los vars anteriores y suaviza el hover */
-.navbar{
-  background: var(--bs-navbar-bg) !important;
-  color: var(--bs-navbar-color) !important;
-}
-.navbar .nav-link{ color: var(--bs-nav-link-color) !important; }
-.navbar .nav-link:hover,
-.navbar .nav-link:focus{
-  background: #7a7a7a;              /* hover más claro, no “negrísimo” */
-  color: var(--bs-nav-link-hover-color) !important;
+.toolbar {
+    margin: 10px 0;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-/* Dropdowns claros */
-.dropdown-menu{
-  --bs-dropdown-bg: #f4f4f4;
-  --bs-dropdown-link-color: #2b2b2b;
-  --bs-dropdown-link-hover-bg: #eaeaea;
-  --bs-dropdown-link-active-bg: #dedede;
+.toolbar input,
+.toolbar button {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background: #1e1e1e;
+    color: #fff;
 }
 
-/* Botones rojos coherentes */
-.btn,
-.btn-primary,
-.btn-danger,
-.btn-secondary{
-  --bs-btn-color: #fff;
-  --bs-btn-bg: var(--eut-btn-red);
-  --bs-btn-border-color: var(--eut-btn-red);
-  --bs-btn-hover-bg: var(--eut-btn-red-hover);
-  --bs-btn-hover-border-color: var(--eut-btn-red-hover);
-  --bs-btn-active-bg: var(--eut-btn-red-active);
-  --bs-btn-active-border-color: var(--eut-btn-red-active);
+.toolbar button {
+    cursor: pointer;
+    background: #EF4444;
+    border: none;
 }
 
-/* Cards claras */
-.card, .card .card-body{
-  background: var(--bs-card-bg) !important;
-  color: var(--bs-card-color) !important;
+.chart-size-generic{
+    display: flex;
+    min-width: 860px;
+    /* min-height: 300px; */
+    justify-content: center;
+    flex-direction: column;
+    max-width: 1250px;
+    width: 100%;
+    height: 600px;
 }
-.card .card-header{
-  background: var(--bs-card-cap-bg) !important;
-  color: var(--bs-card-color) !important;
-  border-bottom: 1px solid var(--bs-card-border-color) !important;
+/* Forzar texto blanco en etiquetas del treemap */
+#chart_div2 svg text {
+    fill: #fff !important;
+    font-family: Arial, Helvetica, sans-serif !important;
 }
 
-/* —— Ajustes de tu “aviso” para tema claro —— */
-.report-card{
-  background: #ffffff;
-  color: #2b2b2b;
-  border: 1px solid #e5e5e5;
+/* Tooltip nativo (si lo usaras) */
+.google-visualization-tooltip {
+    color: #fff !important;
+    font-family: Arial, Helvetica, sans-serif !important;
 }
-.report-header{
-  background: #efefef;
-  border-bottom: 1px solid #e5e5e5;
-}
-.label{ color:#555; }
-.value{
-  background:#ffffff;
-  border:1px solid #e1e1e1;
-  color:#2b2b2b;
-}
-.value.editable{ background:#fff; border:1px dashed #bdbdbd; }
-.value.editable:focus{ border-color:#c62828; box-shadow:0 0 0 2px rgba(198,40,40,.12) inset; }
 
-/* Botones del aviso (coherentes con el tema) */
-#toggleEditBtn,#saveReportBtn{
-  background: var(--eut-btn-red);
-  border: 1px solid var(--eut-btn-red);
-  color:#fff;
+.slot-logo-header {
+    width: 56px;
+    height: 56px;
+    /* border: 1px dashed #555;
+    border-radius: 4px; */
 }
-#toggleEditBtn:hover,#saveReportBtn:hover{ background: var(--eut-btn-red-hover); }
+
+.slot-brand-footer {
+    width: 200px;
+    height: 80px;
+}
+
+.slot-brand-footer img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.report-card {
+    width: 80vw;
+    max-width: 700px;
+    background: #2a2a2a;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 16px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.report-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #3a3a3a;
+    border-bottom: 1px solid #444;
+    padding: 10px 12px;
+}
+
+.report-header .title {
+    flex: 1;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: .5px;
+}
+
+.report-body {
+    padding: 14px 12px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.row-aviso {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 10px;
+    align-items: center;
+}
+
+#nav-bar-primary{
+    color: #2a2a2a !important;
+}
+
+.label {
+    color: #d0d0d0;
+}
+
+.value {
+    background: #1f1f1f;
+    border: 1px solid #3a3a3a;
+    min-height: 24px;
+    padding: 6px 8px;
+    border-radius: 4px;
+}
+
+.value.strong {
+    font-weight: 700;
+}
+
+.report-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #1b1b1b;
+    border-top: 1px solid #444;
+    padding: 12px;
+}
+
+.sd {
+    font-size: 12px;
+    line-height: 1.35;
+    color: #d0d0d0;
+}
+
+.slot-logo-header img,
+.slot-brand-footer img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+@media (max-width:720px) {
+    .row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Wrapper centrado vertical y horizontal */
+/* Centrado vertical/horizontal del aviso */
+#reportWrap {
+    /* min-height: 100vh; */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px 0;
+}
+
+/* Barra de acciones encima del aviso, mismo ancho que el card */
+.report-actions {
+    /* width: 70vw; */
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.buttons-aviso {
+    display: flex;
+    gap: 8px;
+}
+
+/* Botón coherente con el tema */
+#saveReportBtn {
+    background: #EF4444;
+    color: #fff;
+    border: 1px solid #EF4444;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1;
+    transition: filter .15s ease, transform .05s ease, box-shadow .15s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+}
+
+#saveReportBtn:hover {
+    filter: brightness(1.1);
+}
+
+#saveReportBtn:active {
+    transform: translateY(1px);
+}
+
+/* Botón coherente con el tema */
+#toggleEditBtn {
+    background: #EF4444;
+    color: #fff;
+    border: 1px solid #EF4444;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1;
+    transition: filter .15s ease, transform .05s ease, box-shadow .15s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+}
+
+#toggleEditBtn:hover {
+    filter: brightness(1.1);
+}
+
+#toggleEditBtn:active {
+    transform: translateY(1px);
+}
+
+/* campos editables del aviso */
+.value.editable {
+    cursor: text;
+    outline: none;
+    border: 1px dashed #555;
+    /* se ve editable */
+    background: #1f1f1f;
+}
+
+.value.editable:focus {
+    border-color: #EF4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, .15) inset;
+}
+
+/* placeholder cuando está vacío */
+.value.editable:empty::before {
+    content: attr(data-placeholder);
+    color: #9aa0a6;
+}
+
+/* Treemap centrado y 80% de ancho */
+#chart_div2 {
+    width: 80%;
+    height: 600px;
+    /* coincide con tu options.height */
+    margin: 0 auto;
+    /* centra horizontalmente */
+    display: block;
+}
+
+/* En pantallas chicas, que use casi todo el ancho */
+@media (max-width: 900px) {
+    #chart_div2 {
+        width: 95vw;
+    }
+}
