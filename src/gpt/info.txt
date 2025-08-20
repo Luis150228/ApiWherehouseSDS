@@ -28,6 +28,13 @@
 
 
 /************************************************************/
+ALTER TABLE eut_genericactive
+  ADD COLUMN img_b64 LONGTEXT NULL,
+  ADD COLUMN img_mime VARCHAR(64) NULL,
+  ADD COLUMN img_size INT NULL,
+  ADD COLUMN img_added_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP;
+
+/************************************************************/
 
 // --- helpers para preview (opcional) ---
 const inpGeneric = document.getElementById('inc-generic');
