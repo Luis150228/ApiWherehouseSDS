@@ -1,69 +1,100 @@
-// Asumiendo que ya tienes esto:
-const btnsOrderGenerics = document.querySelectorAll('.btn-order-generic');
 
-for (const btn of btnsOrderGenerics) {
-  btn.addEventListener('click', async (e) => {
-    const el = e.currentTarget;            // <- ESTE es el botón correcto
-    const dataSend = { ...el.dataset };    // copia limpia de data-*
-    if (el.dataset.busy === '1') return;   // evita doble click
+const listActiveGeneric = await fetchGet('genericos', activeGenerics)
+liActiveGeneric(listActiveGeneric.data, 'list-active-generic')
 
-    showBtnSpinner(el, 'Procesando…');
+const actionsGenerics = ()=>{
+	const btnsOrderGenerics = document.querySelectorAll('[data-type-generic="true"]')
+	for (const btnOrderGeneric of btnsOrderGenerics) {
+		btnOrderGeneric.addEventListener('click', async (e) =>{
+			const btn = e.target
+			const dataSend = e.target.dataset
+			btn.setAttribute('disabled', true)
+			
+			try {
+				const sendAction = await fetchPOST('genericos', dataSend)
+				if (sendAction.code === "200") {
+					liActiveGeneric(sendAction.data, 'list-active-generic')
+					console.log(sendAction);
+				}
+			} catch (error) {
+				console.log(error);
+			} finally{
+				btn.removeAttribute('disabled')
+			}
+		})
+	}
+}
+	
+actionsGenerics();
 
-    try {
-      // TODO: tu lógica. Ejemplo simulado:
-      // await fetch('/api/orden', { method: 'POST', body: JSON.stringify(dataSend) });
-      await fakeDelay(1200);
-      console.log('payload:', dataSend);
-    } catch (err) {
-      console.error(err);
-      // opcional: cambiar el texto si hubo error
-      // showBtnSpinner(el, 'Error'); setTimeout(() => hideBtnSpinner(el), 1200);
-    } finally {
-      hideBtnSpinner(el);
+
+/***************************************/
+export const liActiveGeneric = (folios ,objet)=>{
+    const ol = document.getElementById(`${objet}`)
+    // ol.replaceChildren();
+    ol.textContent = '';
+    ol.setAttribute('disabled', true);
+    for (const folio of folios) {
+        const li = document.createElement('li');
+        const detailGeneric = document.createElement('div');
+        const fwBold = document.createElement('div');
+        const fwBoldp = document.createElement('p');
+        li.classList.add('list-group-item')
+        detailGeneric.classList.add('detail-generic')
+        fwBold.classList.add('fw-bold')
+        fwBold.innerHTML = `${folio.report}`
+        fwBoldp.innerHTML = `${folio.falla} - ${folio.plataforma}: ${folio.user_active}`
+        detailGeneric.appendChild(fwBold)
+        detailGeneric.appendChild(fwBoldp)
+
+        const divgroupButtons = document.createElement('div')
+        const groupButtonActive = document.createElement('button')
+        const groupButtonPause = document.createElement('button')
+        const groupButtonDelete = document.createElement('button')
+        divgroupButtons.setAttribute('role', 'group') 
+        divgroupButtons.setAttribute('aria-label', 'Generic Control')
+        divgroupButtons.classList.add('btn-group') 
+
+        groupButtonActive.classList.add('btn')
+        groupButtonActive.classList.add('btn-success')
+        groupButtonPause.classList.add('btn')
+        groupButtonPause.classList.add('btn-warning')
+        groupButtonDelete.classList.add('btn')
+        groupButtonDelete.classList.add('btn-danger')
+
+        groupButtonActive.setAttribute('data-order', 'ACTIVE')
+        groupButtonPause.setAttribute('data-order', 'PAUSE')
+        groupButtonDelete.setAttribute('data-order', 'DELETE')
+
+        groupButtonActive.setAttribute('data-type-generic', true)
+        groupButtonPause.setAttribute('data-type-generic', true)
+        groupButtonDelete.setAttribute('data-type-generic', true)
+
+        groupButtonActive.setAttribute('data-generic', folio.report)
+        groupButtonPause.setAttribute('data-generic', folio.report)
+        groupButtonDelete.setAttribute('data-generic', folio.report)
+        
+        groupButtonActive.innerHTML = 'Activar';
+        groupButtonPause.innerHTML = 'Pausar';
+        groupButtonDelete.innerHTML = 'Borrar';
+        
+        if (folio.estatus_active === 1) {
+            groupButtonActive.setAttribute('disabled', true)
+            groupButtonPause.removeAttribute('disabled')
+        }else if (folio.estatus_active === 0) {
+            groupButtonPause.setAttribute('disabled', true)
+            groupButtonActive.removeAttribute('disabled')
+        }
+
+        divgroupButtons.appendChild(groupButtonActive)
+        divgroupButtons.appendChild(groupButtonPause)
+        divgroupButtons.appendChild(groupButtonDelete)
+
+        li.appendChild(detailGeneric)
+        li.appendChild(divgroupButtons)
+        
+        ol.appendChild(li)
     }
-  });
-}
 
-// Helpers spinner:
-function showBtnSpinner(btn, text = 'Procesando…') {
-  btn.dataset.busy = '1';
-  btn.disabled = true;
-  // guarda el contenido anterior para restaurar luego
-  if (!btn.dataset.prevHtml) btn.dataset.prevHtml = btn.innerHTML;
-  btn.innerHTML = `<span class="mini-spinner" aria-hidden="true"></span> ${text}`;
-}
-
-function hideBtnSpinner(btn) {
-  btn.disabled = false;
-  btn.innerHTML = btn.dataset.prevHtml || 'Listo';
-  btn.dataset.busy = '0';
-  delete btn.dataset.prevHtml;
-}
-
-// util de demo
-function fakeDelay(ms){ return new Promise(r => setTimeout(r, ms)); }
-
-/*********************************************************************/
-.mini-spinner{
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  margin-right: .5em;
-  border: .15em solid rgba(255,255,255,.35);
-  border-top-color: #fff;
-  border-radius: 50%;
-  vertical-align: -0.15em;
-  animation: spin .6s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-
-
-/*********************************************************************/
-
-function showBtnSpinner(btn, text = 'Procesando…') {
-  btn.dataset.busy = '1';
-  btn.disabled = true;
-  if (!btn.dataset.prevHtml) btn.dataset.prevHtml = btn.innerHTML;
-  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>${text}`;
+    ol.removeAttribute('disabled');
 }
