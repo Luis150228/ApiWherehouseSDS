@@ -1,52 +1,86 @@
-const actionsGenerics = (() => {
-  let bound = false; // evita múltiples bindings
+quiero hacer un inner join entre eut_genericactive y servicenow_reportes que mejoras me recomiendas la base de eut_genericactive es de muy pocos registros pero servicenow_reportes tiene cientos de miles de registros
 
-  return function init() {
-    if (bound) return;
-    bound = true;
+CREATE TABLE `eut_genericactive` (
+  `report` varchar(40) NOT NULL,
+  `date` datetime DEFAULT NULL,
+  `user_active` varchar(45) DEFAULT NULL,
+  `estatus_active` int DEFAULT NULL,
+  PRIMARY KEY (`report`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-    const list = document.getElementById('list-active-generic');
-    if (!list) return;
 
-    list.addEventListener('click', async (e) => {
-      // botón real aunque hagas click en un <span> o ícono dentro
-      const btn = e.target.closest('button[data-type-generic="true"]');
-      if (!btn || !list.contains(btn)) return;
+CREATE TABLE `servicenow_reportes` (
+  `folio` varchar(20) NOT NULL,
+  `abierto` datetime DEFAULT NULL,
+  `resuelto` datetime DEFAULT NULL,
+  `cerrado` datetime DEFAULT NULL,
+  `creado_por` varchar(250) DEFAULT NULL,
+  `grup_asig` varchar(150) DEFAULT NULL,
+  `asig_a` varchar(150) DEFAULT NULL,
+  `estatus` varchar(20) DEFAULT NULL,
+  `categoria` varchar(150) DEFAULT NULL,
+  `subcategoria` varchar(150) DEFAULT NULL,
+  `subcategoria2` varchar(120) DEFAULT NULL,
+  `tipoproblema` varchar(120) DEFAULT NULL,
+  `nombreproyecto` varchar(150) DEFAULT NULL,
+  `sla` int DEFAULT NULL,
+  `ceco` int DEFAULT NULL,
+  `ubicacion` varchar(150) DEFAULT NULL,
+  `abierto_por` varchar(150) DEFAULT NULL,
+  `solicitante` varchar(150) DEFAULT NULL,
+  `duracion` int DEFAULT NULL,
+  `duracion_negocio` int DEFAULT NULL,
+  `empresa` varchar(150) DEFAULT NULL,
+  `descripcion` mediumtext,
+  `obs_notasresolucion` longtext,
+  `cerrado_por` varchar(150) DEFAULT NULL,
+  `resuelto_por` varchar(150) DEFAULT NULL,
+  `codigo_cierre` varchar(150) DEFAULT NULL,
+  `incidencia_principal` varchar(45) DEFAULT NULL,
+  `incidencia_secundarias` varchar(45) DEFAULT NULL,
+  `actualizado` datetime DEFAULT NULL,
+  `mail_creador` varchar(150) DEFAULT NULL,
+  `id_ext` varchar(50) DEFAULT NULL,
+  `clasificacion` varchar(50) DEFAULT NULL,
+  `aplicativo` varchar(50) DEFAULT NULL,
+  `plataforma` varchar(50) DEFAULT NULL,
+  `falla` varchar(50) DEFAULT NULL,
+  `solucion` varchar(50) DEFAULT NULL,
+  `causa_raiz` varchar(50) DEFAULT NULL,
+  `useralta` varchar(20) DEFAULT NULL,
+  `limitadores` varchar(25) DEFAULT NULL,
+  `tiempo` int DEFAULT NULL,
+  `estado` varchar(50) DEFAULT NULL,
+  `zona_ubica` varchar(50) DEFAULT NULL,
+  `zona_num` int DEFAULT NULL,
+  `region_cau` varchar(50) DEFAULT NULL,
+  `sla_tsucursales` int DEFAULT NULL,
+  `grupo_gral` varchar(50) DEFAULT NULL,
+  `grupo_local` varchar(50) DEFAULT NULL,
+  `medido` varchar(50) DEFAULT NULL,
+  `exc_user` varchar(7) DEFAULT NULL,
+  `exc_obs` tinytext,
+  `exc_clave` varchar(250) DEFAULT NULL,
+  `exc_region` varchar(145) DEFAULT NULL,
+  `exc_metrica` varchar(20) DEFAULT NULL,
+  `exc_status` varchar(150) DEFAULT 'En Metrica',
+  `suc_corp` varchar(50) DEFAULT NULL,
+  `sf_descrip_gral` varchar(150) DEFAULT NULL,
+  `sf_descrip_especif` tinytext,
+  `id_fespecif` int DEFAULT NULL,
+  `sf_descrip_type` varchar(50) DEFAULT NULL,
+  `sf_minutos` int DEFAULT NULL,
+  `semanal_rango` varchar(45) DEFAULT NULL,
+  `semanal_mes` varchar(10) DEFAULT NULL,
+  `tipos` varchar(45) DEFAULT NULL,
+  `origen` varchar(25) DEFAULT NULL,
+  `f_alta` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`folio`),
+  KEY `idx_abierto_por` (`abierto_por`),
+  KEY `idx_nombreproyecto` (`nombreproyecto`),
+  KEY `idx_categoria` (`categoria`),
+  KEY `idx_estatus` (`estatus`),
+  KEY `idx_principal_secundarias_resuelto` (`incidencia_principal`,`incidencia_secundarias`,`resuelto`),
+  KEY `idx_origen_fecha` (`origen`,`abierto`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
-      // Evita doble click mientras procesa
-      if (btn.dataset.busy === '1') return;
-
-      // Arma payload desde data-*
-      const dataSend = {
-        order: btn.dataset.order,
-        generic: btn.dataset.generic,
-      };
-
-      // Estado “busy”
-      btn.dataset.busy = '1';
-      btn.disabled = true;
-      const prevHTML = btn.innerHTML;
-      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando…`;
-
-      try {
-        const sendAction = await fetchPOST('genericos', dataSend);
-        if (sendAction.code === "200") {
-          // Redibuja la lista con datos frescos
-          liActiveGeneric(sendAction.data, 'list-active-generic');
-          // OJO: no necesitas re-registrar nada; el listener sigue vivo en el contenedor
-        } else {
-          console.warn('Respuesta no exitosa:', sendAction);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        // Si aún existe el botón (puede haber desaparecido tras redibujar)
-        if (document.body.contains(btn)) {
-          btn.innerHTML = prevHTML;
-          btn.disabled = false;
-          btn.dataset.busy = '0';
-        }
-      }
-    });
-  };
-})();
