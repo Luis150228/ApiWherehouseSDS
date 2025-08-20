@@ -1,96 +1,24 @@
-const btnSave = document.getElementById('save-generic-active');
-const inpGeneric = document.getElementById('inc-generic');
-const msgBox = document.getElementById('save-generic-msg'); // opcional (ver HTML abajo)
+// ...después de:
+const data = new google.visualization.DataTable(tableJson);
 
-btnSave.addEventListener('click', async (e) => {
-  e.preventDefault();
-  if (!inpGeneric || !btnSave) return;
-
-  const value = inpGeneric.value.trim();
-  if (!value) {
-    showMsg('Captura un folio.', 'warn');
-    return;
+// Mapea folio -> origen_analist (primera ocurrencia no vacía)
+const origenByFolio = new Map();
+for (const r of rows) {
+  const folio  = String(r.incidencia_principal || '').trim();
+  const origen = String(r.origen_analist ?? r.origen ?? '').trim();
+  if (folio && origen && !origenByFolio.has(folio)) {
+    origenByFolio.set(folio, origen);
   }
+}
 
-  // estado busy
-  showBtnSpinner(btnSave, 'Guardando…');
-  inpGeneric.setAttribute('disabled', 'true');
-
-  const payload = { typeGeneric: 'activate', generic: value, order: 'CREATE' };
-
-  try {
-    // fetchPOST puede devolverte {code, data} o un Response. Cubro ambas rutas:
-    const res = await fetchPOST('genericos', payload);
-
-    // 1) Si tu fetchPOST ya devuelve JSON con .code:
-    const code = typeof res?.code !== 'undefined' ? Number(res.code) : undefined;
-
-    // 2) Si fetchPOST retorna Response nativo:
-    // const code = res instanceof Response ? res.status : Number(res?.code);
-
-    if (code === 200) {
-      inpGeneric.value = '';
-      showMsg('Guardado.', 'ok');
-      liActiveGeneric(res.data, 'list-active-generic');
-    } else if (code === 204) {
-      // folio no existe
-      showMsg('El folio no existe (204).', 'err');
-    } else {
-      showMsg(`Error inesperado${code ? ` (${code})` : ''}.`, 'err');
-    }
-
-  } catch (err) {
-    console.error(err);
-    showMsg('Error de red/servidor.', 'err');
-  } finally {
-    hideBtnSpinner(btnSave);
-    inpGeneric.removeAttribute('disabled');
+// Pone 'f' (formatted label) solo en el nivel de folio (parent === 'Tickets')
+for (let i = 0; i < data.getNumberOfRows(); i++) {
+  const idPath = data.getValue(i, 0);
+  const parent = data.getValue(i, 1);
+  if (parent === 'Tickets') { // este row es un folio
+    const folio = (String(idPath).split('│')[1] || '').trim();
+    const origen = origenByFolio.get(folio);
+    // No tocar el 'v' (idPath); solo el 'f' que se renderiza visualmente
+    data.setFormattedValue(i, 0, origen ? `${folio} – ${origen}` : folio);
   }
-});
-
-// ===== helpers =====
-function showBtnSpinner(btn, text = 'Procesando…') {
-  if (btn.dataset.busy === '1') return;
-  btn.dataset.busy = '1';
-  btn.disabled = true;
-  if (!btn.dataset.prevHtml) btn.dataset.prevHtml = btn.innerHTML;
-  btn.innerHTML = `<span class="mini-spinner" aria-hidden="true"></span> ${text}`;
 }
-
-function hideBtnSpinner(btn) {
-  btn.disabled = false;
-  btn.innerHTML = btn.dataset.prevHtml || 'Guardar';
-  btn.dataset.busy = '0';
-  delete btn.dataset.prevHtml;
-}
-
-function showMsg(text, kind = 'ok') {
-  if (!msgBox) { alert(text); return; }
-  msgBox.textContent = text;
-  msgBox.className = `msg ${kind}`;
-  // limpia mensaje luego de 2.5s
-  clearTimeout(showMsg.tid);
-  showMsg.tid = setTimeout(() => { msgBox.textContent = ''; msgBox.className = 'msg'; }, 2500);
-}
-
-
-/****************CSS**************************/
-
-.mini-spinner{
-  display:inline-block;width:1em;height:1em;margin-right:.5em;
-  border:.15em solid rgba(255,255,255,.35);
-  border-top-color:#fff;border-radius:50%;
-  vertical-align:-0.15em;animation:spin .6s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-.msg{ margin-top:.5rem; font-size:.9rem; }
-.msg.ok{ color:#16a34a; }     /* verde */
-.msg.warn{ color:#ca8a04; }   /* ámbar */
-.msg.err{ color:#dc2626; }    /* rojo */
-
-
-/*****************************************************/
-
-<button id="save-generic-active" class="btn btn-danger">Guardar</button>
-<div id="save-generic-msg" class="msg"></div>
