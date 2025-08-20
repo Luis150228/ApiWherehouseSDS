@@ -1,24 +1,450 @@
-// ...después de:
-const data = new google.visualization.DataTable(tableJson);
+quiero agregar un input para subir un archivo de imagen a la base de datos quisiera que fuera base 64 y almacenarlo en un campobo LONGTEXT, puedes ayudarme en ajustar el sigueinte div
 
-// Mapea folio -> origen_analist (primera ocurrencia no vacía)
-const origenByFolio = new Map();
-for (const r of rows) {
-  const folio  = String(r.incidencia_principal || '').trim();
-  const origen = String(r.origen_analist ?? r.origen ?? '').trim();
-  if (folio && origen && !origenByFolio.has(folio)) {
-    origenByFolio.set(folio, origen);
+<div class="control-btn-generics">
+  <div class="mb-3">
+    <label for="formFileSm" class="form-label">Seguimiento a Generico</label>
+    <div>
+      <input class="form-control" type="text" placeholder="INC000" aria-label="INC000 example" id="inc-generic" name="inc-generic">
+    </div>
+  </div>
+  <button type="button" class="btn btn-primary btn-sm" id="save-generic-active">Seguimiento</button>
+</div>
+
+para este objetivo y la funcion que requiere para guardar la imagen que no pase de 9MB
+
+dataupdateGenerics.html
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="shortcut icon" type="image/x-icon" href="../assets/img/Banco_Santander_LogotipoSmall.svg" />
+  <title>EUT Reportes</title>
+  <link rel="stylesheet" href="../css/tableroSeguimientoSucursales.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/preloader.css">
+  <link rel="stylesheet" href="../css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+  <script src="../assets/bootstrap-5.3.0-alpha2-dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/papaparse/papaparse.min.js"></script>
+  <script src="../assets/xlsxFull/xlsx.full.min.js"></script>
+  <script src="../assets/canvas/html2canvas.js"></script>
+</head>
+
+<body>
+  <main>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="nav-bar-primary"></nav>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="jumbotron">
+          <div class="title-time">
+            <h1 class="display-5">Bases de Datos</h1>
+            <div id="eut-time"></div>
+          </div>
+          <p class="lead">Actualizar Registros</p>
+          <hr class="my-2" />
+        </div>
+      </div>
+      <div id="veiw-secction" class="update-cards">
+
+
+        <div class="card">
+          <div class="card-header title-card-header">
+            <i data-load="true" class="bi bi-arrow-clockwise"></i>
+            <p class="title-card">Genericos Activos</p>
+            <span class="link-db"><i data-icon="true"></i></span>
+            <i class="bi bi-grid-3x2-gap-fill" data-bs-toggle="popover"></i>
+          </div>
+          <div class="card-body">
+            <h5 class="card-title">Ultima Actualizacion</h5>
+            <div class="generics-list-active">
+              <ol class="list-group list-group-numbered" id="list-active-generic"></ol>
+            </div>
+            <div class="control-btn-generics">
+              <div class="mb-3">
+                <label for="formFileSm" class="form-label">Seguimiento a Generico</label>
+                <div>
+                  <input class="form-control" type="text" placeholder="INC000" aria-label="INC000 example" id="inc-generic" name="inc-generic">
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" id="save-generic-active">Seguimiento</button>
+            </div>
+            <div id="save-generic-msg" class="msg"></div>
+          </div>
+        </div>
+        
+      </div>
+      
+    </div>
+  </main>
+
+  <template id="temp-card">
+    <div class="card">
+      <div class="card-header title-card-header">
+        <i data-load="true" class="bi bi-arrow-clockwise"></i>
+        <p class="title-card">Titulo</p>
+        <span class="link-db"><i data-icon="true"></i></span>
+        <i class="bi bi-grid-3x2-gap-fill" data-bs-toggle="popover"></i>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Ultima Actualizacion</h5>
+        <p class="card-text info-text-color">2023-07-02 02:20:23</p>
+        <div class="control-btn">
+          <form>
+            <div class="mb-3">
+              <label for="formFileSm" class="form-label">Seleccionar Archivo CSV - 9MB maximo</label>
+              <div>
+                <i data-iconBtn="true"></i><input class="form-control-sm" type="file" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Actualizar</button>
+          </form>
+        </div>
+        <div class="msj msj-load msj-none">
+          <div class="spinner-grow" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+        <div class="divBtn">
+          <div class="btn-position">
+            <button type="button" class="btn-warning msj-none" data-bs-toggle="modal" data-bs-target="#altUpdate">Carga
+              Alterna...</button>
+          </div>
+        </div>
+        <div class="msj msj-alert msj-none">
+          <div class="alert alert-success" role="alert"></div>
+        </div>
+        <div class="zone-progressbar"></div>
+      </div>
+    </div>
+  </template>
+  <!-- Modal -->
+  <div class="modal fade" id="altUpdate" tabindex="-1" aria-labelledby="update-data" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="title-update-alt">Actualizacion Alternativa</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="mb-3">
+              <label for="recipient-base" class="col-form-label">Base:</label>
+              <input type="text" class="form-control" id="recipient-base">
+              <p>.csv</p>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <div class="load-modal msj-none">
+            <div class="spinner-grow" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <button id="link-database" type="button" class="btn btn-primary" data-bs-dismiss="modal">Actualizar
+            Base</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal -->
+  <script src="./js/dataupdateGenerics.js" type="module"></script>
+  <!-- <script src="./js/generics/activeGeneric.js" type="module"></script> -->
+</body>
+
+</html>
+
+
+
+ataupdateGenerics.js: 
+import { fetchGet, fetchPOST } from '../../js/connect.js';
+import {
+	btnDisplayBlock,
+	btnDisplaynone,
+	cardsUpdb,
+	divLoader,
+	divLoaderCreate,
+	mostrarTiempo,
+	navMenufn,
+	popOvers,
+} from '../../js/elements.js';
+import { openFile } from '../../js/fileReader.js';
+import { actionsGenerics, liActiveGeneric } from './generics/activeGeneric.js';
+const cadsGroup = document.querySelector('#veiw-secction');
+
+divLoaderCreate();
+
+const activeGenerics = {generics : true, active : true};
+const dataMenu = await fetchPOST('variablesData', { orden: 'menu' });
+const dataBases = await fetchPOST('variablesData', { orden: 'bases' });
+const listActiveGeneric = await fetchGet('genericos', activeGenerics)
+const dataBaseDates = [dataBases.data[0]];
+cardsUpdb(dataBaseDates, 'temp-card', cadsGroup);
+liActiveGeneric(listActiveGeneric.data, 'list-active-generic')
+navMenufn('nav-bar-primary', dataMenu.data);
+divLoader();
+
+const titleTime = document.querySelector('#eut-time');
+const frmDatas = document.querySelectorAll('form');
+const inpFile = document.querySelectorAll('[type="file"]');
+const reloadBtns = document.querySelectorAll('[data-load="true"]');
+const linkDb = document.querySelectorAll('.link-db');
+// const popData = document.querySelectorAll('[data-bs-toggle="popover"]')
+const mnsLoad = document.querySelectorAll('.msj-load');
+const mnsAlert = document.querySelectorAll('.msj-alert');
+const BarProgressz = document.querySelectorAll('.zone-progressbar');
+const btnSumit = document.querySelectorAll('button[type="submit"]');
+const pText = document.querySelectorAll('p[class="card-text info-text-color"]');
+const btnsAlt = document.querySelectorAll('[data-bs-target="#altUpdate"]');
+const btnSave = document.getElementById('save-generic-active');
+const inpGeneric = document.getElementById('inc-generic');
+const msgBox = document.getElementById('save-generic-msg'); 
+
+btnSave.addEventListener('click', async (e) => {
+  e.preventDefault();
+  if (!inpGeneric || !btnSave) return;
+
+  const value = inpGeneric.value.trim();
+  if (!value) {
+    showMsg('Captura un folio.', 'warn');
+    return;
   }
+
+  // estado busy
+  showBtnSpinner(btnSave, 'Guardando…');
+  inpGeneric.setAttribute('disabled', 'true');
+
+  const payload = { typeGeneric: 'activate', generic: value, order: 'CREATE' };
+
+  try {
+    // fetchPOST puede devolverte {code, data} o un Response. Cubro ambas rutas:
+    const res = await fetchPOST('genericos', payload);
+
+    // 1) Si tu fetchPOST ya devuelve JSON con .code:
+    const code = typeof res?.code !== 'undefined' ? Number(res.code) : undefined;
+
+    // 2) Si fetchPOST retorna Response nativo:
+    // const code = res instanceof Response ? res.status : Number(res?.code);
+
+    if (code === 200) {
+      inpGeneric.value = '';
+      showMsg('Guardado.', 'ok');
+      liActiveGeneric(res.data, 'list-active-generic');
+    } else if (code === 204) {
+      // folio no existe
+      showMsg('El folio no existe (204).', 'err');
+    } else {
+      showMsg(`Error inesperado${code ? ` (${code})` : ''}.`, 'err');
+    }
+
+  } catch (err) {
+    console.error(err);
+    showMsg('Error de red/servidor.', 'err');
+  } finally {
+    hideBtnSpinner(btnSave);
+    inpGeneric.removeAttribute('disabled');
+  }
+});
+
+
+function showBtnSpinner(btn, text = 'Procesando…') {
+  if (btn.dataset.busy === '1') return;
+  btn.dataset.busy = '1';
+  btn.disabled = true;
+  if (!btn.dataset.prevHtml) btn.dataset.prevHtml = btn.innerHTML;
+  btn.innerHTML = `<span class="mini-spinner" aria-hidden="true"></span> ${text}`;
 }
 
-// Pone 'f' (formatted label) solo en el nivel de folio (parent === 'Tickets')
-for (let i = 0; i < data.getNumberOfRows(); i++) {
-  const idPath = data.getValue(i, 0);
-  const parent = data.getValue(i, 1);
-  if (parent === 'Tickets') { // este row es un folio
-    const folio = (String(idPath).split('│')[1] || '').trim();
-    const origen = origenByFolio.get(folio);
-    // No tocar el 'v' (idPath); solo el 'f' que se renderiza visualmente
-    data.setFormattedValue(i, 0, origen ? `${folio} – ${origen}` : folio);
-  }
+function hideBtnSpinner(btn) {
+  btn.disabled = false;
+  btn.innerHTML = btn.dataset.prevHtml || 'Guardar';
+  btn.dataset.busy = '0';
+  delete btn.dataset.prevHtml;
+}
+
+function showMsg(text, kind = 'ok') {
+  if (!msgBox) { alert(text); return; }
+  msgBox.textContent = text;
+  msgBox.className = `msg ${kind}`;
+  // limpia mensaje luego de 2.5s
+  clearTimeout(showMsg.tid);
+  showMsg.tid = setTimeout(() => { msgBox.textContent = ''; msgBox.className = 'msg'; }, 2500);
+}
+
+actionsGenerics();
+popOvers();
+
+setInterval(() => {
+	titleTime.innerHTML = mostrarTiempo();
+}, 1000);
+
+for (const [i, file] of Array.from(inpFile).entries()) {
+	const alerta = mnsAlert[i];
+	const btn = btnSumit[i];
+	file.addEventListener('change', (e) => {
+		const typeFile = e.target.files[0].type;
+		const sizFile = e.target.files[0].size / 1024 / 1024;
+		const typeFiles = [
+			'text/csv',
+			'application/vnd.ms-excel',
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		];
+
+		if (typeFiles.includes(typeFile) && sizFile <= 19) {
+			btn.removeAttribute('disabled');
+			if (!mnsAlert[i].classList.contains('msj-none')) {
+				mnsAlert[i].classList.add('msj-none');
+			}
+		} else {
+			mnsAlert[i].classList.toggle('msj-none');
+			alerta.innerHTML = `<div class="alert alert-success" role="alert">
+                                    Tipo de documento incorrecto o tamaño excede los 9 MB
+                                </div>`;
+			btn.setAttribute('disabled', true);
+		}
+	});
+}
+
+for (const [i, reloadBtn] of Array.from(reloadBtns).entries()) {
+	reloadBtn.addEventListener('click', async (e) => {
+		// await fetchGet('bridge', { tokesn: 'sasal', reload: true });
+		await fetchGet('bridge', { reload: true });
+		btnSumit[i].style.display = 'block';
+		inpFile[i].style.display = 'block';
+		inpFile[i].value = '';
+		BarProgressz[i].style.display = 'none';
+	});
+}
+
+for (const [i, frmData] of Array.from(frmDatas).entries()) {
+	frmData.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		// console.log(frmDatas);
+		for (const frmDataObj of frmDatas) {
+			const inpsFile = frmDataObj.querySelectorAll('input[type="file"]');
+			const buttons = frmDataObj.querySelectorAll('button[type="submit"]');
+			// console.log(buttons);
+			for (const button of buttons) {
+				button.style.display = 'none';
+			}
+			for (const inpFile of inpsFile) {
+				inpFile.style.display = 'none';
+			}
+		}
+		const archivo = e.target[0].files[0];
+		const base = e.target.name;
+		const tiempo = mostrarTiempo();
+		btnDisplaynone(btnSumit);
+		btnSumit[i].style.display = 'none';
+		mnsLoad[i].classList.toggle('msj-none');
+		setTimeout(() => {
+			mnsLoad[i].classList.toggle('msj-none');
+			btnsAlt[i].classList.toggle('btn');
+		}, 15000);
+
+		let data;
+		if (base !== 'tablero') {
+			data = await openFile(base, archivo, tiempo, BarProgressz[i], mnsAlert[i], mnsLoad[i], btnsAlt[i]);
+		}
+		const getResp = await fetchGet(data.data[0].type, { bridge: data.data[0].type }); // Limpia el bridge terminado la carga
+		// const getResp = await fetchGet(data.data[0].type, { tosken: 'sasal', bridge: data.data[0].type });
+		// console.log(getResp);
+
+		for (const frmDataObj of frmDatas) {
+			const inpsFile = frmDataObj.querySelectorAll('input[type="file"]');
+			const buttons = frmDataObj.querySelectorAll('button[type="submit"]');
+			// console.log(buttons);
+			for (const button of buttons) {
+				button.style.display = 'block';
+			}
+			for (const inpFile of inpsFile) {
+				inpFile.style.display = 'block';
+			}
+		}
+		pText[i].innerHTML = data.data[0].actualizado == 0 ? 'Sin Cambios' : data.data[0].actualizado;
+		// linkDb[i].setAttribute('href', getResp.data[0].link == 0 ? '#' : getResp.data[0].link);
+		mnsLoad[i].classList.toggle('msj-none');
+		mnsAlert[i].classList.toggle('msj-none');
+		setTimeout(() => {
+			mnsAlert[i].classList.toggle('msj-none');
+		}, 10000);
+		btnDisplayBlock(btnSumit);
+		btnSumit[i].style.display = 'block';
+		inpFile[i].value = '';
+		BarProgressz[i].style.display = 'none';
+	});
+}
+
+for (const [i, btnAlt] of Array.from(btnsAlt).entries()) {
+	btnAlt.addEventListener('click', (e) => {
+		const title = document.querySelector('#title-update-alt');
+		const baseCSV = document.querySelector('#recipient-base');
+		const linkDataBase = document.querySelector('#link-database');
+		const loadModal = document.querySelector('.load-modal');
+		const base = e.target.dataset.bsType;
+		let nameFile;
+		if (base == 'Solicitudes') {
+			nameFile = 'sc_task';
+		} else if (base == 'Incidentes') {
+			nameFile = 'incident';
+			// }else if (base == 'Incidentes') {
+			//     nameFile = 'incident'
+		}
+		title.innerHTML = `Actualizacion Alternativa ${base}`;
+		baseCSV.value = nameFile;
+		btnSumit[i].style.display = 'none';
+		inpFile[i].style.display = 'none';
+
+		linkDataBase.addEventListener('click', async (e) => {
+			loadModal.classList.toggle('msj-none');
+			linkDataBase.classList.toggle('btn');
+			linkDataBase.classList.toggle('msj-none');
+			mnsLoad[i].classList.toggle('msj-none');
+			btnsAlt[i].disabled = true;
+			const fileUp = await fetchGet('ImportSaveFile', { base: base, file: baseCSV.value });
+			loadModal.classList.toggle('msj-none');
+			linkDataBase.classList.toggle('btn');
+			linkDataBase.classList.toggle('msj-none');
+			mnsLoad[i].classList.toggle('msj-none');
+			pText[i].innerHTML = fileUp.data[0].dbUpdate == 0 ? 'Sin Cambios' : fileUp.data[0].dbUpdate;
+			if (fileUp.code == '200') {
+				btnsAlt[i].classList.toggle('btn');
+				// linkDb[i].setAttribute('href', fileUp.data[0].link == 0 ? '#' : fileUp.data[0].link);
+				mnsAlert[i].innerHTML = `<div class="alert alert-success" role="alert">${fileUp.mnj}</div>`;
+				mnsAlert[i].classList.toggle('msj-none');
+				btnSumit[i].style.display = 'block';
+				inpFile[i].style.display = 'block';
+			} else if (fileUp.code == '204') {
+				mnsAlert[
+					i
+				].innerHTML = `<div class="alert alert-danger" role="alert">Falla en importacion contactar a C356882</div>`;
+				mnsAlert[i].classList.toggle('msj-none');
+			} else {
+				mnsAlert[
+					i
+				].innerHTML = `<div class="alert alert-danger" role="alert">Falla en importacion contactar a C356882</div>`;
+				mnsAlert[i].classList.toggle('msj-none');
+			}
+
+			btnsAlt[i].disabled = false;
+			setTimeout(() => {
+				mnsAlert[i].classList.toggle('msj-none');
+			}, 15000);
+		});
+	});
+}
+
+for (const link of linkDb) {
+	link.addEventListener('click', (e) => {
+		const urlLink = e.target.parentElement.dataset.link;
+		openInWindow(urlLink);
+		// return false;
+	});
+}
+
+function openInWindow(url) {
+	window.open(url, '_blank', 'width=800, height=600');
 }
