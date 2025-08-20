@@ -1,23 +1,96 @@
-puedes ayudarme a mejorar para que tenga un spiner como el anterior en el button frmSaveGenericActive durante el proceso de fetch y se quite al finalizar en caso de un codigo 204 marque una falla por que el folio no existe 
+const btnSave = document.getElementById('save-generic-active');
+const inpGeneric = document.getElementById('inc-generic');
+const msgBox = document.getElementById('save-generic-msg'); // opcional (ver HTML abajo)
 
-const frmSaveGenericActive = document.getElementById('save-generic-active')
+btnSave.addEventListener('click', async (e) => {
+  e.preventDefault();
+  if (!inpGeneric || !btnSave) return;
 
-frmSaveGenericActive.addEventListener('click', async (e) =>{
-	e.preventDefault()
-	const data = document.getElementById('inc-generic')
-	data.setAttribute('disabled', true)
-	const dataSend = {typeGeneric : 'activate', generic : data.value, order : 'CREATE'};
+  const value = inpGeneric.value.trim();
+  if (!value) {
+    showMsg('Captura un folio.', 'warn');
+    return;
+  }
 
-	try {
+  // estado busy
+  showBtnSpinner(btnSave, 'Guardando…');
+  inpGeneric.setAttribute('disabled', 'true');
 
-		const saveGeneric = await fetchPOST('genericos', dataSend);
-		data.value = ''
-		data.removeAttribute('disabled')
-		console.log(saveGeneric);
-		liActiveGeneric(saveGeneric.data, 'list-active-generic')
-		
-	} catch (error) {
-		
-	}
-	console.log(dataSend);
-})
+  const payload = { typeGeneric: 'activate', generic: value, order: 'CREATE' };
+
+  try {
+    // fetchPOST puede devolverte {code, data} o un Response. Cubro ambas rutas:
+    const res = await fetchPOST('genericos', payload);
+
+    // 1) Si tu fetchPOST ya devuelve JSON con .code:
+    const code = typeof res?.code !== 'undefined' ? Number(res.code) : undefined;
+
+    // 2) Si fetchPOST retorna Response nativo:
+    // const code = res instanceof Response ? res.status : Number(res?.code);
+
+    if (code === 200) {
+      inpGeneric.value = '';
+      showMsg('Guardado.', 'ok');
+      liActiveGeneric(res.data, 'list-active-generic');
+    } else if (code === 204) {
+      // folio no existe
+      showMsg('El folio no existe (204).', 'err');
+    } else {
+      showMsg(`Error inesperado${code ? ` (${code})` : ''}.`, 'err');
+    }
+
+  } catch (err) {
+    console.error(err);
+    showMsg('Error de red/servidor.', 'err');
+  } finally {
+    hideBtnSpinner(btnSave);
+    inpGeneric.removeAttribute('disabled');
+  }
+});
+
+// ===== helpers =====
+function showBtnSpinner(btn, text = 'Procesando…') {
+  if (btn.dataset.busy === '1') return;
+  btn.dataset.busy = '1';
+  btn.disabled = true;
+  if (!btn.dataset.prevHtml) btn.dataset.prevHtml = btn.innerHTML;
+  btn.innerHTML = `<span class="mini-spinner" aria-hidden="true"></span> ${text}`;
+}
+
+function hideBtnSpinner(btn) {
+  btn.disabled = false;
+  btn.innerHTML = btn.dataset.prevHtml || 'Guardar';
+  btn.dataset.busy = '0';
+  delete btn.dataset.prevHtml;
+}
+
+function showMsg(text, kind = 'ok') {
+  if (!msgBox) { alert(text); return; }
+  msgBox.textContent = text;
+  msgBox.className = `msg ${kind}`;
+  // limpia mensaje luego de 2.5s
+  clearTimeout(showMsg.tid);
+  showMsg.tid = setTimeout(() => { msgBox.textContent = ''; msgBox.className = 'msg'; }, 2500);
+}
+
+
+/****************CSS**************************/
+
+.mini-spinner{
+  display:inline-block;width:1em;height:1em;margin-right:.5em;
+  border:.15em solid rgba(255,255,255,.35);
+  border-top-color:#fff;border-radius:50%;
+  vertical-align:-0.15em;animation:spin .6s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.msg{ margin-top:.5rem; font-size:.9rem; }
+.msg.ok{ color:#16a34a; }     /* verde */
+.msg.warn{ color:#ca8a04; }   /* ámbar */
+.msg.err{ color:#dc2626; }    /* rojo */
+
+
+/*****************************************************/
+
+<button id="save-generic-active" class="btn btn-danger">Guardar</button>
+<div id="save-generic-msg" class="msg"></div>
