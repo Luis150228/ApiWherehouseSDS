@@ -6,6 +6,44 @@
 //     "order": "CREATE"
 // }
 
+// ya tengo estas columnas en la tabla
+
+// ALTER TABLE eut_genericactive
+//   ADD COLUMN img_b64 LONGTEXT NULL,
+//   ADD COLUMN img_mime VARCHAR(64) NULL,
+//   ADD COLUMN img_size INT NULL,
+//   ADD COLUMN img_added_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP;
+
+// Ya tengo este Front listo 
+// <div class="control-btn-generics">
+//   <div class="mb-3">
+//     <label class="form-label">Seguimiento a Genérico</label>
+
+//     <div class="row g-2 align-items-end">
+//       <div class="col-12 col-sm-4">
+//         <input class="form-control" type="text" placeholder="INC000" id="inc-generic" name="inc-generic" />
+//       </div>
+
+//       <div class="col-12 col-sm-6">
+//         <input class="form-control" type="file" id="inc-image" accept="image/*" />
+//         <div class="form-text">JPEG/PNG/WebP, máx. 9&nbsp;MB</div>
+
+//         <!-- Preview opcional -->
+//         <div id="img-preview" class="mt-2"></div>
+//       </div>
+
+//       <div class="col-12 col-sm-2 d-grid">
+//         <button type="button" class="btn btn-primary btn-sm" id="save-generic-active">
+//           Seguimiento
+//         </button>
+//       </div>
+//     </div>
+//   </div>
+
+//   <div id="save-generic-msg" class="msg"></div>
+// </div>
+
+
 const inpGeneric = document.getElementById('inc-generic');
 const inpGenericImg = document.getElementById('inc-image');
 
