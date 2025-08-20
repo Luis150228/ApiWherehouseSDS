@@ -1,1 +1,23 @@
-SELECT report, r.aplicativo, r.plataforma, r.falla , `date`, user_active, estatus_active FROM eut_genericactive g LEFT JOIN servicenow_reportes r ON g.report = r.folio;
+puedes ayudarme a mejorar para que tenga un spiner como el anterior en el button frmSaveGenericActive durante el proceso de fetch y se quite al finalizar en caso de un codigo 204 marque una falla por que el folio no existe 
+
+const frmSaveGenericActive = document.getElementById('save-generic-active')
+
+frmSaveGenericActive.addEventListener('click', async (e) =>{
+	e.preventDefault()
+	const data = document.getElementById('inc-generic')
+	data.setAttribute('disabled', true)
+	const dataSend = {typeGeneric : 'activate', generic : data.value, order : 'CREATE'};
+
+	try {
+
+		const saveGeneric = await fetchPOST('genericos', dataSend);
+		data.value = ''
+		data.removeAttribute('disabled')
+		console.log(saveGeneric);
+		liActiveGeneric(saveGeneric.data, 'list-active-generic')
+		
+	} catch (error) {
+		
+	}
+	console.log(dataSend);
+})
