@@ -85,11 +85,40 @@ function applyFilters() {
 	draw(rows, incident);
 }
 
-function draw(rows, incidentQuery) {
-  // Dibuja el treemap
-  renderTreemap('chart_generics', rows, DEFAULT_KEYS, { dateField: DATE_FIELD });
+function openScreenFailModal(base64) {
+  // Ajusta IDs si usas otros
+  const modalEl = document.getElementById('screenFailModal');
+  const imgEl   = document.getElementById('ScreenFailImg');
 
-  // Render del aviso y datos auxiliares (incluye img_size, img_64)
+  if (!modalEl || !imgEl) {
+    console.warn('[ScreenFail] Falta markup del modal o <img id="ScreenFailImg">');
+    return;
+  }
+
+  // Asegura prefijo data URI
+  const src = String(base64 || '').startsWith('data:')
+    ? base64
+    : `data:image/*;base64,${base64}`;
+
+  imgEl.src = src;
+
+  // Bootstrap 5 Modal
+  if (window.bootstrap?.Modal) {
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  } else {
+    // Fallback sin Bootstrap
+    modalEl.style.display = 'block';
+  }
+}
+
+function draw(rows, incidentQuery) {
+  // 1) Treemap
+  renderTreemap('chart_div2', rows, DEFAULT_KEYS, { dateField: DATE_FIELD });
+
+  // 2) Aviso: renderReport DEBE devolver también img_size e img_64
+  //    Asegúrate de que tu renderReport retorne, por ejemplo:
+  //    return { incident: targetKey, img_size: withSec?.img_size, img_64: withSec?.img_64 };
   const info = renderReport({
     rows,
     incidentQuery,
@@ -98,36 +127,59 @@ function draw(rows, incidentQuery) {
     mountId: 'report',
   });
 
-  // Nombre del incidente para el PNG
   CURRENT_REPORT_INCIDENT = info.incident || '';
 
-  // ===== Botón "Pantalla Error" =====
-  const screenBtn = document.getElementById('ScreenFailBtn');
+  // 3) Botón Pantalla Error (asegúrate que exista en el HTML)
+  //    Ejemplo en tu index.html (antes del botón Editar):
+  //    <button id="ScreenFailBtn" type="button" class="btn btn-outline-secondary btn-sm" title="Ver pantalla de error" style="display:none">Pantalla error</button>
+  //
+  //    Modal mínimo:
+  //    <div class="modal fade" id="screenFailModal" tabindex="-1" aria-hidden="true">
+  //      <div class="modal-dialog modal-lg modal-dialog-centered">
+  //        <div class="modal-content">
+  //          <div class="modal-header">
+  //            <h5 class="modal-title">Pantalla de error</h5>
+  //            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  //          </div>
+  //          <div class="modal-body"><img id="ScreenFailImg" class="img-fluid" alt="Pantalla de error" /></div>
+  //        </div>
+  //      </div>
+  //    </div>
 
-  // ¿hay imagen válida? (tamaño > 0 y base64 no vacío)
+  let btn = document.getElementById('ScreenFailBtn');
+  if (!btn) {
+    // Si no está, no hacemos nada (no rompe)
+    console.warn('[ScreenFail] #ScreenFailBtn no encontrado en el DOM.');
+    return;
+  }
+
+  // Clonar para limpiar handlers anteriores (anti “no hace nada” por handler viejo)
+  const btnClone = btn.cloneNode(true);
+  btn.parentNode.replaceChild(btnClone, btn);
+  btn = btnClone;
+
+  // ¿Hay imagen válida?
   const hasImage =
-    Number.isFinite(info.img_size) &&
-    info.img_size > 0 &&
-    !!(info.img_64 && String(info.img_64).trim());
+    Number.isFinite(Number(info?.img_size)) &&
+    Number(info.img_size) > 0 &&
+    typeof info?.img_64 === 'string' &&
+    info.img_64.trim().length > 0;
 
-  if (screenBtn) {
-    if (hasImage) {
-      // Mostrar y habilitar
-      screenBtn.style.display = 'inline-block';
-      screenBtn.disabled = false;
-      screenBtn.removeAttribute('aria-disabled');
-      screenBtn.title = 'Ver pantalla de error';
-      screenBtn.onclick = () => openScreenFailModal(info.img_64);
-    } else {
-      // Opción A: deshabilitar y dejar visible
-      screenBtn.disabled = true;
-      screenBtn.setAttribute('aria-disabled', 'true');
-      screenBtn.title = 'Sin imagen disponible';
-      screenBtn.onclick = null;
-
-      // Opción B: ocultar completamente (descomenta si prefieres ocultar)
-      // screenBtn.style.display = 'none';
-    }
+  if (hasImage) {
+    // Mostrar + habilitar + texto + click
+    btn.style.display = 'inline-block';
+    btn.disabled = false;
+    btn.removeAttribute('aria-disabled');
+    btn.title = 'Ver pantalla de error';
+    btn.textContent = 'Pantalla error';
+    btn.addEventListener('click', () => openScreenFailModal(info.img_64), { once: true });
+  } else {
+    // Ocultar por completo (o deshabilitar si prefieres dejarlo visible)
+    btn.style.display = 'none';
+    btn.disabled = true;
+    btn.setAttribute('aria-disabled', 'true');
+    btn.title = 'Sin imagen disponible';
+    btn.textContent = 'Pantalla error';
   }
 }
 
