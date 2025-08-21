@@ -54,6 +54,8 @@ export function renderReport({ rows, incidentQuery, dateField, mountId = 'report
 	const incidentesAsoc = withSec?.incidencia_secundarias ?? '';
 	const hInicio = formatAmPm(inicio);
 	const hCorte = formatAmPm(corte);
+	const img_size = Number(withSec?.img_size ?? NaN);
+	const img_64   = withSec?.img_64 || '';
 
 	mount.innerHTML = `
     <div class="report-card">
@@ -103,5 +105,5 @@ export function renderReport({ rows, incidentQuery, dateField, mountId = 'report
       </div>
     </div>`;
 
-	return { incident: targetKey };
+	return { incident: targetKey, img_size, img_64 };
 }
