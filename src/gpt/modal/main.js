@@ -86,8 +86,10 @@ function applyFilters() {
 }
 
 function draw(rows, incidentQuery) {
+  // Dibuja el treemap
   renderTreemap('chart_generics', rows, DEFAULT_KEYS, { dateField: DATE_FIELD });
 
+  // Render del aviso y datos auxiliares (incluye img_size, img_64)
   const info = renderReport({
     rows,
     incidentQuery,
@@ -95,19 +97,37 @@ function draw(rows, incidentQuery) {
     reportTitle: REPORT_TITLE,
     mountId: 'report',
   });
+
+  // Nombre del incidente para el PNG
   CURRENT_REPORT_INCIDENT = info.incident || '';
 
-  // ⬇️ Mostrar/ocultar botón Pantalla Error según img_size
-  const screenBtn = byId('ScreenFailBtn');
-  if (screenBtn) {
-    // Tu regla: si img_size ≥ 0, mostrar el botón; si no, ocultarlo
-    const hasSize = Number.isFinite(info.img_size) && info.img_size >= 0;
-    screenBtn.style.display = hasSize ? 'inline-block' : 'none';
+  // ===== Botón "Pantalla Error" =====
+  const screenBtn = document.getElementById('ScreenFailBtn');
 
-    // Re-asigna el click para abrir el modal con la imagen
-    screenBtn.onclick = hasSize
-      ? () => openScreenFailModal(info.img_64)
-      : null;
+  // ¿hay imagen válida? (tamaño > 0 y base64 no vacío)
+  const hasImage =
+    Number.isFinite(info.img_size) &&
+    info.img_size > 0 &&
+    !!(info.img_64 && String(info.img_64).trim());
+
+  if (screenBtn) {
+    if (hasImage) {
+      // Mostrar y habilitar
+      screenBtn.style.display = 'inline-block';
+      screenBtn.disabled = false;
+      screenBtn.removeAttribute('aria-disabled');
+      screenBtn.title = 'Ver pantalla de error';
+      screenBtn.onclick = () => openScreenFailModal(info.img_64);
+    } else {
+      // Opción A: deshabilitar y dejar visible
+      screenBtn.disabled = true;
+      screenBtn.setAttribute('aria-disabled', 'true');
+      screenBtn.title = 'Sin imagen disponible';
+      screenBtn.onclick = null;
+
+      // Opción B: ocultar completamente (descomenta si prefieres ocultar)
+      // screenBtn.style.display = 'none';
+    }
   }
 }
 
