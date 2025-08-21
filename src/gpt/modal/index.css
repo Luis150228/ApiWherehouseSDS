@@ -44,6 +44,61 @@
   --eut-gray-300:  #202020;
 }
 
+/* Ajustes específicos del MODAL bajo el tema grey */
+[data-bs-theme="grey"] .modal{
+  /* Colores del modal (Bootstrap 5.3 usa estas vars) */
+  --bs-modal-bg: #ffffff;
+  --bs-modal-color: #2b2b2b;
+  --bs-modal-border-color: #e5e5e5;
+  --bs-modal-header-bg: #efefef;
+  --bs-modal-footer-bg: #efefef;
+  --bs-modal-header-border-color: #e5e5e5;
+  --bs-modal-footer-border-color: #e5e5e5;
+
+  /* Botón de cierre (X) */
+  --bs-btn-close-color: #2b2b2b;
+  --bs-btn-close-opacity: 0.8;
+  --bs-btn-close-hover-opacity: 1;
+}
+
+/* Aplica los fondos/colores definidos arriba */
+[data-bs-theme="grey"] .modal-content{
+  background: var(--bs-modal-bg);
+  color: var(--bs-modal-color);
+  border-color: var(--bs-modal-border-color);
+}
+[data-bs-theme="grey"] .modal-header{
+  background: var(--bs-modal-header-bg);
+  border-bottom: 1px solid var(--bs-modal-header-border-color);
+}
+[data-bs-theme="grey"] .modal-footer{
+  background: var(--bs-modal-footer-bg);
+  border-top: 1px solid var(--bs-modal-footer-border-color);
+}
+
+/* Botón “Cerrar” del modal (secondary) en gris */
+[data-bs-theme="grey"] .modal .btn.btn-secondary{
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #676767;
+  --bs-btn-border-color: #676767;
+  --bs-btn-hover-bg: #7a7a7a;
+  --bs-btn-hover-border-color: #7a7a7a;
+  --bs-btn-active-bg: #5c5c5c;
+  --bs-btn-active-border-color: #5c5c5c;
+}
+
+/* Si usas un botón primario dentro del modal y lo quieres “Santander” */
+[data-bs-theme="grey"] .modal .btn.btn-primary{
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--eut-btn-red);
+  --bs-btn-border-color: var(--eut-btn-red);
+  --bs-btn-hover-bg: var(--eut-btn-red-hover);
+  --bs-btn-hover-border-color: var(--eut-btn-red-hover);
+  --bs-btn-active-bg: var(--eut-btn-red-active);
+  --bs-btn-active-border-color: var(--eut-btn-red-active);
+}
+
+
 /* ===== Base ===== */
 body{
   background: var(--bs-body-bg);
