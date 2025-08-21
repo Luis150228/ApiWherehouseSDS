@@ -86,15 +86,29 @@ function applyFilters() {
 }
 
 function draw(rows, incidentQuery) {
-	renderTreemap('chart_generics', rows, DEFAULT_KEYS, { dateField: DATE_FIELD });
-	const info = renderReport({
-		rows,
-		incidentQuery,
-		dateField: DATE_FIELD,
-		reportTitle: REPORT_TITLE,
-		mountId: 'report',
-	});
-	CURRENT_REPORT_INCIDENT = info.incident || '';
+  renderTreemap('chart_generics', rows, DEFAULT_KEYS, { dateField: DATE_FIELD });
+
+  const info = renderReport({
+    rows,
+    incidentQuery,
+    dateField: DATE_FIELD,
+    reportTitle: REPORT_TITLE,
+    mountId: 'report',
+  });
+  CURRENT_REPORT_INCIDENT = info.incident || '';
+
+  // ⬇️ Mostrar/ocultar botón Pantalla Error según img_size
+  const screenBtn = byId('ScreenFailBtn');
+  if (screenBtn) {
+    // Tu regla: si img_size ≥ 0, mostrar el botón; si no, ocultarlo
+    const hasSize = Number.isFinite(info.img_size) && info.img_size >= 0;
+    screenBtn.style.display = hasSize ? 'inline-block' : 'none';
+
+    // Re-asigna el click para abrir el modal con la imagen
+    screenBtn.onclick = hasSize
+      ? () => openScreenFailModal(info.img_64)
+      : null;
+  }
 }
 
 
