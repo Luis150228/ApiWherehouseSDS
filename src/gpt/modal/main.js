@@ -99,3 +99,56 @@ function draw(rows, incidentQuery) {
 
 
 /****************Logica modal************************ */
+function ensureScreenFailModal() {
+  let modal = document.getElementById('screenFailModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'screenFailModal';
+    modal.className = 'modal-eut';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-hidden', 'true');
+    modal.innerHTML = `
+      <div class="modal-eut__backdrop" data-close="1"></div>
+      <div class="modal-eut__dialog">
+        <button class="modal-eut__close" type="button" aria-label="Cerrar" data-close="1">&times;</button>
+        <h3 class="modal-eut__title">Pantalla de Error</h3>
+        <div class="modal-eut__body">
+          <img id="screenFailImg" alt="Pantalla de Error" />
+        </div>
+      </div>
+    `;
+    modal.addEventListener('click', (e) => {
+      if (e.target.dataset.close === '1') closeScreenFailModal();
+    });
+    document.body.appendChild(modal);
+  }
+  return modal;
+}
+
+function openScreenFailModal(img64) {
+  const modal = ensureScreenFailModal();
+  const img = modal.querySelector('#screenFailImg');
+  const body = modal.querySelector('.modal-eut__body');
+
+  if (img64 && img64.trim()) {
+    img.style.display = 'block';
+    img.src = `data:image/*;base64,${img64}`;
+    body.dataset.empty = '0';
+  } else {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    body.dataset.empty = '1';
+    body.innerHTML = '<p style="margin:8px 0">Sin imagen disponible.</p>';
+  }
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeScreenFailModal() {
+  const modal = document.getElementById('screenFailModal');
+  if (modal) {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+}
