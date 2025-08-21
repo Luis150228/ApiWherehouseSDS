@@ -288,3 +288,62 @@
         width: 95vw;
     }
 }
+
+/* Botón Pantalla de Error (si no usas Bootstrap en ese contenedor) */
+.btn-view-error{
+  background:#444;
+  color:#fff;
+  border:1px solid #555;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  margin-right:8px;
+}
+.btn-view-error:hover{ background:#555; }
+
+/* Modal simple */
+.modal-eut{
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 9999;
+}
+.modal-eut.is-open{ display:block; }
+.modal-eut__backdrop{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,.6);
+}
+.modal-eut__dialog{
+  position: relative;
+  z-index: 1;
+  width: min(900px, 94vw);
+  margin: 5vh auto;
+  background: #1c1c1c;
+  color:#fff;
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.4);
+}
+.modal-eut__close{
+  position:absolute;
+  top:8px; right:10px;
+  background: transparent;
+  color:#fff;
+  border:none;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.modal-eut__title{
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+.modal-eut__body img{
+  display:block;
+  max-width: 100%;
+  max-height: 80vh;
+  margin: 0 auto;
+  border-radius: 6px;
+  background: #000;
+}
