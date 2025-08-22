@@ -1,0 +1,49 @@
+ayudame a crear una funcion en maria DB donde dado un host (cadena) con un largo de 7 caracteres cree otra cadena con formato de correo electronico, antes de procesar el hostname debe dejar solo numeros y letras ningun otro caracter debe ser considerado por ejemplo los promeros 4 digitos son el CC (centro de costos) los siguientes 3 caracteres son el puesto y posicion por ejemplo 8974SBD corresponde a un subdirector su email seria subdirsuc8974@santander.com.mx asi que esta es la equivalencia :
+
+DRC : directorsucXXXX@santander.com.mx
+SBD : subdirsucXXXX@santander.com.mx
+PL1 : cuenta1sucXXXX@antander.com.mx
+PL... : cuenta...2sucXXXX@antander.com.mx EL NUMERO QUE CORRESPONDA EN LUGAR ...
+OFC : oficialsucXXXX@santander.com.mx
+EC1 : ecuenta1sucXXXX@santander.com.mx
+EC... : ecuenta...sucXXXX@santander.com.mx
+AFN : anfitrionsucXXXX@santander.com.mx
+VT1 : oficialsucXXXX@santander.com.mx
+VT2 : oficialsucXXXX@santander.com.mx
+VT3 : oficialsucXXXX@santander.com.mx
+VT... : oficialsucXXXX@santander.com.mx ES VENTANILLA Y NO TIENEN CORREO POR LO QUE DEBEMOS CONTACTAR AL OFICIAL
+
+
+Hostname
+8974SBD
+0292DRC
+1050DRC
+4056PL1
+3723SBD
+7828SBD
+3765SBD
+1946PL3
+2229PL4
+5907PL3
+3729SBD
+0050VT3
+*4977VT1* === 4977VT1
+4602VT2
+3837SBD
+5601OFC
+3837PL1
+0357SBD
+2204SBD
+7264DRC
+0389SBD
+5595PL5
+4371PL3
+5907PL1
+5907OFC
+7288OFC
+0030SBD
+0248PL4
+5694VT5
+0327VT5 
+5643DRC
+

@@ -17,13 +17,13 @@ google.visualization.events.addListener(tree, 'select', () => {
   console.log({ idPath, parent, incident, isFirstLevel });
 
   // Si quieres notificar a tu app:
-  const container = document.getElementById('chart_div2'); // o el containerId que uses
+  const container = document.getElementById('chart_generics'); // o el containerId que uses
   container?.dispatchEvent(new CustomEvent('treemap:select', {
     detail: { row, idPath, parent, incident, isFirstLevel }
   }));
 });
 
-document.getElementById('chart_div2')?.addEventListener('treemap:select', (e) => {
+document.getElementById('chart_generics')?.addEventListener('treemap:select', (e) => {
   const { incident, isFirstLevel } = e.detail;
   if (isFirstLevel) {
     console.log('Click en incidente de 1er nivel:', incident);
