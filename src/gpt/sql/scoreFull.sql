@@ -1,8 +1,9 @@
--- tengo el siguiente procedimiento que califica el llenado de las plantillas quiero agregar que si en cualquier campo aparece "Usuario no proporciona" se considere como campo lleno en missing_fields y valido en invalid_fields y el score se base en el total de campos en este caso 12 (por los campos de la plantilla) vs ivalid_fields que creo es como se lleva ahora, puedes ayudarme en esa validacion 
- 
 DELIMITER $$
-CREATE DEFINER=`lrangel`@`%` PROCEDURE `stp_generic_tickets_QualityScore_full`()
+
+DROP PROCEDURE IF EXISTS stp_generic_tickets_QualityScore_full $$
+CREATE PROCEDURE stp_generic_tickets_QualityScore_full2_0()
 BEGIN
+  /* Total de checks (12 campos) */
   WITH
   base AS (
     SELECT
@@ -12,7 +13,7 @@ BEGIN
       r.abierto,
       CONCAT(r.descripcion, '\n', r.obs_notasresolucion) AS bloque,
 
-      /* Campos de la plantilla (case-insensitive) */
+      /* Campos de la plantilla (case-insensitive, vienen de tu parser) */
       fn_parseItemGenericQuality_ci(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'EXPEDIENTE')            AS expediente,
       fn_parseItemGenericQuality_ci(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'EXT_CONTACTO')          AS ext_contacto,
       fn_parseItemGenericQuality_ci(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CEL_CONTACTO')          AS cel_contacto,
@@ -39,6 +40,7 @@ BEGIN
       AND (r.descripcion LIKE '%**Gener%' OR r.obs_notasresolucion LIKE '%**Gener%')
   ),
   norm AS (
+    /* Normaliza: '' o 'SIN DATOS' -> NULL (no presente) */
     SELECT
       b.*,
       NULLIF(NULLIF(TRIM(b.expediente),''),'SIN DATOS')              AS expediente_n,
@@ -66,29 +68,62 @@ BEGIN
     SELECT
       n.*,
 
-      /* Presencia (requeridos) */
-      IF(n.expediente_n IS NOT NULL, 1, 0) AS req_exp,
-      IF(n.correo_n     IS NOT NULL, 1, 0) AS req_correo,
-      IF(n.cc_n         IS NOT NULL, 1, 0) AS req_cc,
-      IF(n.region_n     IS NOT NULL, 1, 0) AS req_region,
-      IF(n.upn_n        IS NOT NULL, 1, 0) AS req_upn,
-      IF(n.ip_n         IS NOT NULL, 1, 0) AS req_ip,
-      IF(n.hostname_n   IS NOT NULL, 1, 0) AS req_hostname,
+      /* ========= “Usuario no proporciona” (robusto) =========
+         Quitamos *, espacios, puntos y guiones y comparamos.
+         Soporta: "usuario no proporciona", "**Usuario no proporciona**", etc. */
+      (n.expediente_n  IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.expediente_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%')  AS unp_exp,
+      (n.ext_contacto_n IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.ext_contacto_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%') AS unp_ext1,
+      (n.cel_contacto_n IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.cel_contacto_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%') AS unp_cel1,
+      (n.ext2_contacto_n IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.ext2_contacto_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%') AS unp_ext2,
+      (n.cel2_contacto_n IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.cel2_contacto_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%') AS unp_cel2,
+      (n.correo_n      IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.correo_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%')       AS unp_correo,
+      (n.cc_n          IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.cc_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%')           AS unp_cc,
+      (n.region_n      IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.region_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%')       AS unp_region,
+      (n.upn_n         IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.upn_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%')          AS unp_upn,
+      (n.ip_n          IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.ip_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%')           AS unp_ip,
+      (n.hostname_n    IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.hostname_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%')     AS unp_hostname,
+      (n.numero_afectados_n IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.numero_afectados_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%') AS unp_numaf,
+      (n.ip_carrier_n  IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(n.ip_carrier_n),'*',''),' ',''),'.',''),'-','') LIKE '%USUARIONOPROPORCIONA%')   AS unp_ipcar,
+
+      /* ========= Presencia (requeridos) =========
+         “Usuario no proporciona” cuenta como presente porque no es NULL */
+      IF(n.expediente_n   IS NOT NULL, 1, 0) AS req_exp,
+      IF(n.correo_n       IS NOT NULL, 1, 0) AS req_correo,
+      IF(n.cc_n           IS NOT NULL, 1, 0) AS req_cc,
+      IF(n.region_n       IS NOT NULL, 1, 0) AS req_region,
+      IF(n.upn_n          IS NOT NULL, 1, 0) AS req_upn,
+      IF(n.ip_n           IS NOT NULL, 1, 0) AS req_ip,
+      IF(n.hostname_n     IS NOT NULL, 1, 0) AS req_hostname,
       IF(n.cel_contacto_n IS NOT NULL, 1, 0) AS req_cel,
 
-      /* Formato (válidos) */
-      IF(UPPER(n.expediente_n) REGEXP '^[A-Z][0-9]{6}$', 1, 0) AS ok_exp,
-      IF(n.correo_n REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$', 1, 0) AS ok_correo,
-      IF(REPLACE(n.cc_n,' ','')            REGEXP '^[0-9]{3,5}$', 1, 0) AS ok_cc,
-      IF(REPLACE(n.ext_contacto_n,' ','')  REGEXP '^[0-9]{3,5}$', 1, 0) AS ok_ext1,
-      IF(REPLACE(n.ext2_contacto_n,' ','') REGEXP '^[0-9]{3,5}$', 1, 0) AS ok_ext2,
-      IF(REPLACE(n.cel_contacto_n,' ','')  REGEXP '^[0-9]{10}$', 1, 0) AS ok_cel1,
-      IF(REPLACE(n.cel2_contacto_n,' ','') REGEXP '^[0-9]{10}$', 1, 0) AS ok_cel2,
-      IF(n.ip_n REGEXP '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$', 1, 0) AS ok_ip,
-      IF(n.hostname_n REGEXP '^[A-Za-z0-9][A-Za-z0-9-]{0,62}(\\.[A-Za-z0-9-]{1,63})*$', 1, 0) AS ok_hostname,
-      IF(n.upn_n IS NOT NULL AND n.correo_n IS NOT NULL AND n.upn_n LIKE CONCAT('%', SUBSTRING_INDEX(n.correo_n,'@',-1)), 1, 0) AS ok_upn_dom,
-      IF(n.numero_afectados_n IS NULL OR n.numero_afectados_n='SIN DATOS' OR n.numero_afectados_n REGEXP '^[0-9]+(-[0-9]+)?$', 1, 0) AS ok_numaf,
-      IF(n.ip_carrier_n IS NULL OR n.ip_carrier_n REGEXP '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$', 1, 0) AS ok_ip_carrier
+      /* ========= Válidos (formato) =========
+         Regla clave: si es “usuario no proporciona”, lo tomamos como OK. */
+      IF( unp_exp     OR (UPPER(n.expediente_n) REGEXP '^[A-Z][0-9]{6}$'), 1, 0) AS ok_exp,
+      IF( unp_correo  OR (n.correo_n REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'), 1, 0) AS ok_correo,
+      IF( unp_cc      OR (REPLACE(n.cc_n,' ','')            REGEXP '^[0-9]{3,5}$'), 1, 0) AS ok_cc,
+
+      /* Opcionales: NULL -> OK; “usuario no proporciona” -> OK; si no, validar */
+      IF( n.ext_contacto_n IS NULL OR unp_ext1 OR (REPLACE(n.ext_contacto_n,' ','')  REGEXP '^[0-9]{3,5}$'), 1, 0) AS ok_ext1,
+      IF( n.ext2_contacto_n IS NULL OR unp_ext2 OR (REPLACE(n.ext2_contacto_n,' ','') REGEXP '^[0-9]{3,5}$'), 1, 0) AS ok_ext2,
+      IF( unp_cel1 OR (REPLACE(n.cel_contacto_n,' ','')     REGEXP '^[0-9]{10}$'), 1, 0) AS ok_cel1,             -- requerido
+      IF( n.cel2_contacto_n IS NULL OR unp_cel2 OR (REPLACE(n.cel2_contacto_n,' ','') REGEXP '^[0-9]{10}$'), 1, 0) AS ok_cel2,
+
+      IF( unp_ip OR (n.ip_n REGEXP '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$'), 1, 0) AS ok_ip,
+      IF( unp_hostname OR (n.hostname_n REGEXP '^[A-Za-z0-9][A-Za-z0-9-]{0,62}(\\.[A-Za-z0-9-]{1,63})*$'), 1, 0) AS ok_hostname,
+
+      /* UPN ≈ dominio de correo; si cualquiera es “usuario no proporciona” → OK */
+      IF( unp_upn OR unp_correo
+          OR (n.upn_n IS NOT NULL AND n.correo_n IS NOT NULL AND n.upn_n LIKE CONCAT('%', SUBSTRING_INDEX(n.correo_n,'@',-1))), 1, 0
+      ) AS ok_upn_dom,
+
+      /* Número afectados / IP carrier: NULL, “SIN DATOS” o “usuario no proporciona” → OK */
+      IF( n.numero_afectados_n IS NULL OR n.numero_afectados_n='SIN DATOS' OR unp_numaf
+          OR (n.numero_afectados_n REGEXP '^[0-9]+(-[0-9]+)?$'), 1, 0
+      ) AS ok_numaf,
+
+      IF( n.ip_carrier_n IS NULL OR unp_ipcar
+          OR (n.ip_carrier_n REGEXP '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$'), 1, 0
+      ) AS ok_ip_carrier
     FROM norm n
   )
   SELECT
@@ -97,7 +132,7 @@ BEGIN
     f.incidencia_principal,
     f.abierto,
 
-    /* Valores capturados */
+    /* Valores capturados (originales) */
     f.expediente,
     f.ext_contacto,
     f.cel_contacto,
@@ -118,23 +153,66 @@ BEGIN
     f.carrier,
     f.ip_carrier,
 
-    /* Score (suma de válidos de formato) */
+    /* ===== Métricas ===== */
+    12                                           AS total_fields,
+    /* score = válidos */
     (
-      f.ok_exp + f.ok_correo + f.ok_cc + f.ok_ext1 + f.ok_ext2 +
-      f.ok_cel1 + f.ok_cel2 + f.ok_ip + f.ok_hostname + f.ok_upn_dom +
-      f.ok_numaf + f.ok_ip_carrier
-    ) AS score,
+      12
+      - (1 - f.ok_exp)
+      - (1 - f.ok_correo)
+      - (1 - f.ok_cc)
+      - (1 - f.ok_ext1)
+      - (1 - f.ok_ext2)
+      - (1 - f.ok_cel1)
+      - (1 - f.ok_cel2)
+      - (1 - f.ok_ip)
+      - (1 - f.ok_hostname)
+      - (1 - f.ok_upn_dom)
+      - (1 - f.ok_numaf)
+      - (1 - f.ok_ip_carrier)
+    )                                             AS valid_count,
+    /* inválidos = total - válidos */
+    (
+      (1 - f.ok_exp)
+      + (1 - f.ok_correo)
+      + (1 - f.ok_cc)
+      + (1 - f.ok_ext1)
+      + (1 - f.ok_ext2)
+      + (1 - f.ok_cel1)
+      + (1 - f.ok_cel2)
+      + (1 - f.ok_ip)
+      + (1 - f.ok_hostname)
+      + (1 - f.ok_upn_dom)
+      + (1 - f.ok_numaf)
+      + (1 - f.ok_ip_carrier)
+    )                                             AS invalid_count,
+    /* % completitud */
+    ROUND(100 * (
+      12
+      - (1 - f.ok_exp)
+      - (1 - f.ok_correo)
+      - (1 - f.ok_cc)
+      - (1 - f.ok_ext1)
+      - (1 - f.ok_ext2)
+      - (1 - f.ok_cel1)
+      - (1 - f.ok_cel2)
+      - (1 - f.ok_ip)
+      - (1 - f.ok_hostname)
+      - (1 - f.ok_upn_dom)
+      - (1 - f.ok_numaf)
+      - (1 - f.ok_ip_carrier)
+    ) / 12, 1)                                    AS completion_pct,
 
     /* Faltantes (requeridos no presentes) */
     TRIM(BOTH ', ' FROM CONCAT_WS(', ',
-      IF(f.req_exp=1, NULL, 'EXPEDIENTE'),
+      IF(f.req_exp=1,    NULL, 'EXPEDIENTE'),
       IF(f.req_correo=1, NULL, 'CORREO'),
-      IF(f.req_cc=1, NULL, 'CC'),
+      IF(f.req_cc=1,     NULL, 'CC'),
       IF(f.req_region=1, NULL, 'REGION'),
-      IF(f.req_upn=1, NULL, 'UPN'),
-      IF(f.req_ip=1, NULL, 'IP'),
-      IF(f.req_hostname=1, NULL, 'HOSTNAME'),
-      IF(f.req_cel=1, NULL, 'CEL_CONTACTO')
+      IF(f.req_upn=1,    NULL, 'UPN'),
+      IF(f.req_ip=1,     NULL, 'IP'),
+      IF(f.req_hostname=1,NULL, 'HOSTNAME'),
+      IF(f.req_cel=1,    NULL, 'CEL_CONTACTO')
     )) AS missing_fields,
 
     /* Presentes pero inválidos */
@@ -154,6 +232,7 @@ BEGIN
     )) AS invalid_fields
 
   FROM flags f
-  ORDER BY score DESC, f.abierto DESC;
-END$$
+  ORDER BY valid_count DESC, f.abierto DESC;
+END $$
+
 DELIMITER ;
