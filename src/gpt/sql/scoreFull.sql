@@ -1,12 +1,16 @@
 DELIMITER $$
 
-DROP PROCEDURE IF EXISTS stp_generic_tickets_QualityScore_full2_0 $$
-CREATE PROCEDURE stp_generic_tickets_QualityScore_full2_0()
+DROP PROCEDURE IF EXISTS stp_generic_tickets_QualityScore_full2_1 $$
+CREATE PROCEDURE stp_generic_tickets_QualityScore_full2_1()
 BEGIN
+
+DECLARE set_total_fields INT;
+SET set_total_fields = 12;
   WITH
   base AS (
-    SELECT
-      r.abierto_por,
+  SELECT * FROM eut_genericactive a LEFT JOIN
+    (SELECT
+	  LEFT(mail_creador, 7) AS 'creator',
       r.folio,
       IF(r.incidencia_principal <> '', r.incidencia_principal, r.folio) AS incidencia_principal,
       r.abierto,
@@ -32,11 +36,9 @@ BEGIN
       fn_parseItemGenericQuality_ci(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'NUMERO_AFECTADOS')      AS numero_afectados,
       fn_parseItemGenericQuality_ci(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'CARRIER')               AS carrier,
       fn_parseItemGenericQuality_ci(CONCAT(r.descripcion, '\n', r.obs_notasresolucion), 'IP DEL CARRIER')        AS ip_carrier
-    FROM servicenow_reportes r
-    WHERE (r.incidencia_principal <> '' OR r.incidencia_secundarias >= 1)
-      AND r.origen = 'SNGlobal Incidentes'
-      AND r.abierto >= NOW() - INTERVAL 30 DAY
-      AND (r.descripcion LIKE '%**Gener%' OR r.obs_notasresolucion LIKE '%**Gener%')
+    FROM servicenow_reportes r 
+    WHERE 1)g
+      ON a.report = g.folio OR a.report = g.incidencia_principal WHERE a.estatus_active = 1
   ),
   norm AS (
     -- Normaliza: '' o 'SIN DATOS' -> NULL (no presente)
@@ -124,34 +126,12 @@ BEGIN
     FROM unp u
   )
   SELECT
-    f.abierto_por,
     f.folio,
-    f.incidencia_principal,
-    f.abierto,
-
-    -- Valores capturados (originales)
-    f.expediente,
-    f.ext_contacto,
-    f.cel_contacto,
-    f.nombre2_contacto,
-    f.ext2_contacto,
-    f.cel2_contacto,
-    f.correo,
-    f.puesto,
-    f.cc,
-    f.region,
-    f.upn,
-    f.usuario_n,
-    f.ip,
-    f.hostname,
-    f.tipo_usuario,
-    f.descripcion_incidente,
-    f.numero_afectados,
-    f.carrier,
-    f.ip_carrier,
-
+    incidencia_principal,
+    f.creator,
+    IFNULL(IFNULL(u.analyst, a.analyst_name), w.nombre_full) as 'analyst_name',
     -- Métricas (12 checks)
-    12 AS total_fields,
+    set_total_fields AS total_fields,
 
     (  f.ok_exp + f.ok_correo + f.ok_cc + f.ok_ext1 + f.ok_ext2
      + f.ok_cel1 + f.ok_cel2 + f.ok_ip + f.ok_hostname
@@ -164,9 +144,9 @@ BEGIN
     ROUND(100 * (
       (  f.ok_exp + f.ok_correo + f.ok_cc + f.ok_ext1 + f.ok_ext2
        + f.ok_cel1 + f.ok_cel2 + f.ok_ip + f.ok_hostname
-       + f.ok_upn_dom + f.ok_numaf + f.ok_ip_carrier ) / 12
+       + f.ok_upn_dom + f.ok_numaf + f.ok_ip_carrier ) / set_total_fields
     ), 1) AS completion_pct,
-
+	IF((( f.ok_exp + f.ok_correo + f.ok_cc + f.ok_ext1 + f.ok_ext2 + f.ok_cel1 + f.ok_cel2 + f.ok_ip + f.ok_hostname + f.ok_upn_dom + f.ok_numaf + f.ok_ip_carrier ) / set_total_fields) <1, 'Incompleto', 'Correctamente') AS asCompleted,
     -- Faltantes (requeridos no presentes)
     TRIM(BOTH ', ' FROM CONCAT_WS(', ',
       IF(f.req_exp=1,    NULL, 'EXPEDIENTE'),
@@ -195,8 +175,78 @@ BEGIN
       IF(f.ip_carrier_n    IS NOT NULL AND f.ok_ip_carrier=0, 'IP DEL CARRIER (IPv4 inválida)', NULL)
     )) AS invalid_fields
 
-  FROM flags f
+  FROM flags f 
+  LEFT JOIN (SELECT abierto_por AS 'analyst', LEFT(actualizado_por, 7) AS 'analyst_expedient', 'SDK' AS 'typeAnalyst' FROM servicenow_unlock group by abierto_por order by abierto_por ASC limit 400)u
+    ON f.creator = u.analyst_expedient
+  LEFT JOIN (SELECT analyst_expediente, analyst_name FROM sdkanalyst)a
+    ON f.creator = a.analyst_expediente
+  LEFT JOIN (SELECT usuario, nombre_full FROM eut_toolmovil.workday where usuario LIKE 'Z%' ORDER BY usuario desc limit 8000)w
+    ON f.creator = w.usuario
   ORDER BY valid_count DESC, f.abierto DESC;
 END $$
 
 DELIMITER ;
+
+/*
+call eut_reportesbk.stp_generic_tickets_QualityScore_full2_1();
+folio, incidencia_principal, creator, analyst_name, total_fields, valid_count, invalid_count, completion_pct, asCompleted, missing_fields, invalid_fields
+'INC057672909', 'INC057666803', 'Z945591', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057670240', 'INC057666803', 'S789173', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057670221', 'INC057666803', 'S020225', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057670041', 'INC057666803', 'Z949981', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669995', 'INC057666803', 'Z936829', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669968', 'INC057666803', 'Z946606', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669897', 'INC057666803', 'Z945589', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669886', 'INC057666803', 'Z921067', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669794', 'INC057666803', 'Z923414', 'ISRAEL ASCENCIO CONTRERAS', '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669718', 'INC057666803', 'Z949981', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669710', 'INC057666803', 'S027210', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669690', 'INC057666803', 'Z934089', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669658', 'INC057666803', 'S617107', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669621', 'INC057666803', 'S071504', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669589', 'INC057666803', 'Z942058', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669457', 'INC057666803', 'Z934089', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669453', 'INC057666803', 'Z949981', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669205', 'INC057666803', 'S014663', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669062', 'INC057666803', 'Z949981', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057669024', 'INC057666803', 'S108622', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057668668', 'INC057666803', 'Z945586', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057667981', 'INC057666803', 'S110937', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
+'INC057670253', 'INC057666803', 'Z923414', 'ISRAEL ASCENCIO CONTRERAS', '12', '8', '4', '66.7', 'Incompleto', 'CORREO, UPN, IP', 'CEL_CONTACTO (10 dígitos)'
+'INC057669587', 'INC057666803', 'Z921067', NULL, '12', '8', '4', '66.7', 'Incompleto', 'CORREO, UPN, IP', 'HOSTNAME (inválido)'
+'INC057669501', 'INC057666803', 'Z923414', 'ISRAEL ASCENCIO CONTRERAS', '12', '8', '4', '66.7', 'Incompleto', 'CORREO, UPN, IP', 'CEL_CONTACTO (10 dígitos)'
+'INC057669336', 'INC057666803', 'Z948940', NULL, '12', '8', '4', '66.7', 'Incompleto', 'CORREO, UPN, IP, CEL_CONTACTO', ''
+'INC057668373', 'INC057666803', 'Z927706', 'MARIA ESTHELA LOPEZ ROSALES', '12', '8', '4', '66.7', 'Incompleto', 'CORREO, UPN, IP', 'EXT_CONTACTO (3-5 dígitos)'
+'INC057667973', 'INC057666803', 'Z949976', NULL, '12', '8', '4', '66.7', 'Incompleto', 'CORREO, UPN, IP', 'CEL_CONTACTO (10 dígitos)'
+'INC057670052', 'INC057666803', 'Z936831', NULL, '12', '7', '5', '58.3', 'Incompleto', 'CORREO, UPN, IP', 'EXPEDIENTE (letra+6 dígitos), EXT_CONTACTO (3-5 dígitos)'
+'INC057669887', 'INC057666803', 'Z946609', NULL, '12', '7', '5', '58.3', 'Incompleto', 'CORREO, UPN, IP', 'EXT_CONTACTO (3-5 dígitos), CEL_CONTACTO (10 dígitos)'
+'INC057666803', 'INC057666803', 'Z936830', NULL, '12', '7', '5', '58.3', 'Incompleto', '', 'CORREO (formato), EXT2_CONTACTO (3-5 dígitos), CEL_CONTACTO (10 dígitos), CEL2_CONTACTO (10 dígitos), IP DEL CARRIER (IPv4 inválida)'
+'INC057670219', 'INC057666803', 'S034638', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057670011', 'INC057666803', 'S029861', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057669974', 'INC057666803', 'S029277', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057669882', 'INC057666803', 'S262446', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057669636', 'INC057666803', 'S267159', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057669436', 'INC057666803', 'S677408', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057036745', 'INC057033837', 'Z949981', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057035957', 'INC057033837', 'Z949981', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057035934', 'INC057033837', 'Z948940', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057035829', 'INC057033837', 'Z949981', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057035356', 'INC057033837', 'Z932614', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057035109', 'INC057033837', 'Z949981', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057035099', 'INC057033837', 'S359716', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034958', 'INC057033837', 'Z945589', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034683', 'INC057033837', 'S342636', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034639', 'INC057033837', 'S029245', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034559', 'INC057033837', 'Z948938', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034556', 'INC057033837', 'Z936831', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034484', 'INC057033837', 'Z927707', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034297', 'INC057033837', 'Z934090', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034290', 'INC057033837', 'S013914', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034197', 'INC057033837', 'C243104', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034138', 'INC057033837', 'S269812', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034040', 'INC057033837', 'S768600', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057034023', 'INC057033837', 'S273777', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'INC057033837', 'INC057033837', 'S029277', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+'', 'INC057033837', '', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+
+*/
