@@ -188,6 +188,7 @@ END $$
 DELIMITER ;
 
 /*
+Resultado del store procedure
 call eut_reportesbk.stp_generic_tickets_QualityScore_full2_1();
 folio, incidencia_principal, creator, analyst_name, total_fields, valid_count, invalid_count, completion_pct, asCompleted, missing_fields, invalid_fields
 'INC057672909', 'INC057666803', 'Z945591', NULL, '12', '9', '3', '75.0', 'Incompleto', 'CORREO, UPN, IP', ''
@@ -248,5 +249,42 @@ folio, incidencia_principal, creator, analyst_name, total_fields, valid_count, i
 'INC057034023', 'INC057033837', 'S273777', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
 'INC057033837', 'INC057033837', 'S029277', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
 '', 'INC057033837', '', NULL, '12', '5', '7', '41.7', 'Incompleto', 'EXPEDIENTE, CORREO, CC, REGION, UPN, IP, HOSTNAME, CEL_CONTACTO', ''
+
+quiero graficarlo de usando el sigueinte google chart solo que quiero agruparlo por analyst_name en lugar de Year y el resto total_fields, valid_count, invalid_count por 'Sales', 'Expenses', 'Profit'
+de origen no vendra de forma tabular sera un JSON el que regrese la data
+
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['bar']});
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+        var data = google.visualization.arrayToDataTable([
+          ['Year', 'Sales', 'Expenses', 'Profit'],
+          ['2014', 1000, 400, 200],
+          ['2015', 1170, 460, 250],
+          ['2016', 660, 1120, 300],
+          ['2017', 1030, 540, 350]
+        ]);
+
+        var options = {
+          chart: {
+            title: 'Company Performance',
+            subtitle: 'Sales, Expenses, and Profit: 2014-2017',
+          }
+        };
+
+        var chart = new google.charts.Bar(document.getElementById('columnchart_material'));
+
+        chart.draw(data, google.charts.Bar.convertOptions(options));
+      }
+    </script>
+  </head>
+  <body>
+    <div id="columnchart_material" style="width: 800px; height: 500px;"></div>
+  </body>
+</html>
 
 */
