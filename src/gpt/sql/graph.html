@@ -1,178 +1,50 @@
-<div class="from-analyst">
-  <div class="row">
-      <div class="input-group flex-nowrap">
-          <span class="input-group-text" id="addon-wrapping"><i class="bi bi-person-badge-fill"></i></span>
-          <input type="text" readonly class="form-control" placeholder="expediente" aria-label="analyst_expediente" analyst-data="true" aria-describedby="addon-wrapping">
-      </div>
-      <div class="input-group flex-nowrap">
-          <span class="input-group-text" id="addon-wrapping"><i class="bi bi-person-circle"></i></span>
-          <input type="text" class="form-control" placeholder="nombre" aria-label="analyst_name" analyst-data="true" aria-describedby="addon-wrapping">
-      </div>
-      <div class="input-group flex-nowrap">
-          <span class="input-group-text" id="addon-wrapping"><i class="bi bi-person-vcard"></i></span>
-          <input type="text" class="form-control" placeholder="workday" aria-label="analyst_workday" analyst-data="true" aria-describedby="addon-wrapping">
-      </div>
-      <div class="input-group flex-nowrap">
-          <span class="input-group-text" id="addon-wrapping"><i class="bi bi-person-vcard-fill"></i></span>
-          <input type="text" class="form-control" placeholder="corp" aria-label="analyst_corp" analyst-data="true" aria-describedby="addon-wrapping">
-      </div>
-      <div class="input-group flex-nowrap">
-          <span class="input-group-text" id="addon-wrapping"><i class="bi bi-envelope"></i></span>
-          <input type="text" class="form-control" placeholder="mail" aria-label="analyst_mail" analyst-data="true" aria-describedby="addon-wrapping">
-      </div>
-      <div class="input-group flex-nowrap">
-          <span class="input-group-text" id="addon-wrapping"><i class="bi bi-postcard-fill"></i></span>
-          <input type="text" class="form-control" placeholder="upn" aria-label="analyst_upn" analyst-data="true" aria-describedby="addon-wrapping">
-      </div>
-  </div>
-  <div class="row">
-      <button class="btn btn-primary" type="button">Guardar</button>
-  </div>
-</div>
-</div>
-
 <script>
-  // ----- Config y estado -----
-const PAGE_SIZE = 5;
-let currentPage = 1;
-let baseData = data;               // <- tu arreglo "data" del mensaje
-let filteredData = [...baseData];  // estado actual filtrado
-
-// ----- DOM -----
-const tbody = document.getElementById('analyst-tbody');
-const pager = document.getElementById('analyst-pagination');
-const searchInput = document.getElementById('analyst-search');
-const clearBtn = document.getElementById('analyst-clear');
-
-// ===== 1) FUNCIÓN: crear tabla =====
-function buildAnalystTableRows(items, tbodyEl) {
-  if (!tbodyEl) return;
-  if (!items.length) {
-    tbodyEl.innerHTML = `
-      <tr>
-        <td colspan="3" class="text-center text-muted py-4">Sin resultados</td>
-      </tr>`;
-    return;
-  }
-
-  const rowsHtml = items.map((r, idx) => `
-    <tr>
-      <th scope="row">${r.analyst_expediente || '-'}</th>
-      <td>${r.analyst_name || '-'}</td>
-      <td class="text-end">
-        <div class="btn-group" role="group" aria-label="Acciones analista ${r.analyst_expediente || ''}">
-          <button type="button" class="btn btn-info" data-action="config" data-exp="${r.analyst_expediente}">
-            <i class="bi bi-person-fill-gear"></i>
-          </button>
-          <button type="button" class="btn btn-danger" data-action="remove" data-exp="${r.analyst_expediente}">
-            <i class="bi bi-person-dash-fill"></i>
-          </button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-
-  tbodyEl.innerHTML = rowsHtml;
+  // ===== Helpers nuevos =====
+function getAnalystByExp(exp) {
+  const needle = String(exp || '').trim().toLowerCase();
+  return baseData.find(r => String(r.analyst_expediente || '').toLowerCase() === needle) || null;
 }
 
-// ===== 2) FUNCIÓN: filtrar (por expediente o nombre) =====
-function applyAnalystFilter(dataArr, query) {
-  const q = (query ?? '').trim().toLowerCase();
-  if (!q) return [...dataArr];
+function fillAnalystForm(record) {
+  const form = document.querySelector('.from-analyst');
+  if (!form) return;
 
-  return dataArr.filter(r => {
-    const exp = (r.analyst_expediente || '').toLowerCase();
-    const name = (r.analyst_name || '').toLowerCase();
-    return exp.includes(q) || name.includes(q);
+  // Limpia primero (opcional)
+  form.querySelectorAll('[analyst-data="true"][aria-label]').forEach(inp => { inp.value = ''; });
+
+  if (!record) return;
+
+  form.querySelectorAll('[analyst-data="true"][aria-label]').forEach(inp => {
+    const key = inp.getAttribute('aria-label'); // ej. "analyst_name"
+    if (!key) return;
+    inp.value = record[key] ?? '';
   });
 }
 
-// ===== 3) FUNCIÓN: paginación (máx 5 botones: « p p p ») =====
-function buildPagination(totalItems, current, pageSize, ulEl) {
-  if (!ulEl) return;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const makeItem = (label, page, disabled = false, active = false, aria = '') => `
-    <li class="page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}">
-      <a class="page-link" href="#" data-page="${page}" ${aria}>${label}</a>
-    </li>`;
-
-  // Cálculo de ventana de 3 páginas visibles
-  let start = 1, end = Math.min(3, totalPages);
-  if (totalPages > 3) {
-    if (current <= 1) { start = 1; end = 3; }
-    else if (current >= totalPages) { start = totalPages - 2; end = totalPages; }
-    else { start = current - 1; end = current + 1; }
-  }
-
-  let html = '';
-  // Prev «
-  html += makeItem('&laquo;', Math.max(1, current - 1), current === 1, false, 'aria-label="Anterior"');
-
-  // Páginas numéricas
-  for (let p = start; p <= end; p++) {
-    html += makeItem(String(p), p, false, p === current, `aria-label="Página ${p}"`);
-  }
-
-  // Next »
-  html += makeItem('&raquo;', Math.min(totalPages, current + 1), current === totalPages, false, 'aria-label="Siguiente"');
-
-  ulEl.innerHTML = html;
-}
-
-// ===== Glue: actualizar vista =====
-function updateView() {
-  const total = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
-  // Seguridad por si el filtro deja pocas páginas
-  if (currentPage > totalPages) currentPage = totalPages;
-
-  const start = (currentPage - 1) * PAGE_SIZE;
-  const slice = filteredData.slice(start, start + PAGE_SIZE);
-
-  buildAnalystTableRows(slice, tbody);
-  buildPagination(total, currentPage, PAGE_SIZE, pager);
-}
-
-// ===== Eventos =====
-
-// Click paginación (delegación)
-pager.addEventListener('click', (e) => {
-  const a = e.target.closest('a.page-link');
-  if (!a) return;
-  e.preventDefault();
-
-  const pageAttr = a.getAttribute('data-page');
-  if (!pageAttr) return;
-
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
-  const candidate = Number(pageAttr);
-
-  if (isNaN(candidate)) return;
-  currentPage = Math.min(Math.max(1, candidate), totalPages);
-  updateView();
-});
-
-// Buscador (con debounce ligero)
-let t;
-searchInput.addEventListener('input', () => {
-  clearTimeout(t);
-  t = setTimeout(() => {
-    filteredData = applyAnalystFilter(baseData, searchInput.value);
-    currentPage = 1;
-    updateView();
-  }, 200);
-});
-
-// Botón limpiar
-clearBtn.addEventListener('click', () => {
-  searchInput.value = '';
-  filteredData = [...baseData];
+function filterTableByExp(exp) {
+  const needle = String(exp || '').trim().toLowerCase();
+  filteredData = baseData.filter(r =>
+    String(r.analyst_expediente || '').toLowerCase().includes(needle)
+  );
   currentPage = 1;
   updateView();
-});
+}
 
-// Acciones de fila (config/remove) - ejemplo de delegación en la tabla
+function openAccordionById(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  // Requiere Bootstrap JS cargado (window.bootstrap)
+  try {
+    const inst = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+    inst.show();
+  } catch (_) {
+    // Si no tienes bootstrap JS, quita 'collapse' para abrir "a lo bruto"
+    el.classList.remove('collapse');
+    el.classList.add('show');
+  }
+}
+
+  // Acciones de fila (config/remove)/*********************************/
 tbody.addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-action]');
   if (!btn) return;
@@ -180,15 +52,34 @@ tbody.addEventListener('click', (e) => {
   const expediente = btn.dataset.exp;
 
   if (action === 'config') {
-    // TODO: abre modal/config del analista
-    console.log('Configurar', expediente); // quiero aplicar un filtro en base al expediente y llenar los campos aria-label="analyst_expediente" que estan dentro del div .from-analyst que estan el html del ejemplo
+    const rec = getAnalystByExp(expediente);
+    if (!rec) {
+      console.warn('Expediente no encontrado:', expediente);
+      return;
+    }
+
+    // 1) Llenar form
+    fillAnalystForm(rec);
+
+    // 2) Abrir acordeón (ajusta al id real del collapse)
+    openAccordionById('analyst-list');
+
+    // 3) Filtrar tabla por expediente (y opcional: reflejar en el buscador)
+    filterTableByExp(expediente);
+    const searchInput = document.getElementById('analyst-search');
+    if (searchInput) searchInput.value = expediente;
   } else if (action === 'remove') {
-    // TODO: acción de baja
     console.log('Eliminar', expediente);
   }
 });
 
-// Inicializa
-updateView();
 
-</script>
+  /************reset form*///////////
+  function resetAnalystForm() {
+  document.querySelectorAll('.from-analyst [analyst-data="true"][aria-label]')
+    .forEach(inp => inp.value = '');
+}
+
+  /********Seleccionar nombre**************/
+  document.querySelector('.from-analyst [aria-label="analyst_name"]')?.focus();
+
