@@ -1,26 +1,282 @@
-async function downloadXlsx() {
-  const url = `/api/genericos?${new URLSearchParams({
-    generics: true, score: true, xlsx: 'generate'
-  })}`;
+<div id="analyst-list" class="accordion-collapse collapse"
+  data-bs-parent="#analyst-score-card">
+  <div class="accordion-body">
+      <div class="table-responsive">
+          <table class="table-analyst table align-middle">
+              <thead>
+                  <tr>
+                  <th scope="col">Expediente</th>
+                  <th scope="col">Nombre</th>
+                  <th scope="col"></th>
+                  </tr>
+              </thead>
+              <tbody class="table-group-divider">
+                  <tr>
+                  <th scope="row">1</th>
+                  <td>Mark</td>
+                  <td>
+                      <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+                          <button type="button" class="btn btn-info"><i class="bi bi-person-fill-gear"></i></button>
+                          <button type="button" class="btn btn-danger"><i class="bi bi-person-dash-fill"></i></button>
+                      </div>
+                  </td>
+                  </tr>
+                  <tr>
+                  <th scope="row">2</th>
+                  <td>Jacob</td>
+                  <td>
+                      <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+                          <button type="button" class="btn btn-info"><i class="bi bi-person-fill-gear"></i></button>
+                          <button type="button" class="btn btn-danger"><i class="bi bi-person-dash-fill"></i></button>
+                      </div>
+                  </td>
+                  </tr>
+                  <tr>
+                  <th scope="row">3</th>
+                  <td>John</td>
+                  <td>
+                      <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+                          <button type="button" class="btn btn-info"><i class="bi bi-person-fill-gear"></i></button>
+                          <button type="button" class="btn btn-danger"><i class="bi bi-person-dash-fill"></i></button>
+                      </div>
+                  </td>
+                  </tr>
+              </tbody>
+          </table>
+          <nav aria-label="Page navigation example">
+            <ul class="pagination">
+                <li class="page-item">
+                <a class="page-link" href="#" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+                </li>
+                <li class="page-item"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item">
+                <a class="page-link" href="#" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+                </li>
+            </ul>
+          </nav>
+      </div>
+  </div>
+</div>
 
-  const res = await fetch(url, { credentials: 'include' });
-  if (!res.ok) throw new Error('No se pudo generar el XLSX');
-
-  const blob = await res.blob();
-
-  // Intenta extraer filename del header
-  const cd = res.headers.get('Content-Disposition') || '';
-  const m = cd.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)["']?/i);
-  const filename = m?.[1] || `score_${new Date().toISOString().slice(0,10)}.xlsx`;
-
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-}
-
-// Ejemplo: botón
-byId('btnXlsx')?.addEventListener('click', downloadXlsx);
+<script>
+  // mainScore.js
+  const data = [
+        {
+            "analyst_expediente": "Z800344",
+            "analyst_name": "GONZALEZ PEREZ ANA GRITSSEL",
+            "analyst_workday": "100934095",
+            "analyst_corp": "x697745",
+            "analyst_mail": "anagrgonzalez@empresaexterna.com.mx",
+            "analyst_upn": "z800344@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z800356",
+            "analyst_name": "DIANA KAREN JUAREZ RODRIGUEZ",
+            "analyst_workday": "100951893",
+            "analyst_corp": "x743700",
+            "analyst_mail": "dijuarez@empresaexterna.com.mx",
+            "analyst_upn": "Z800356",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z800358",
+            "analyst_name": "YATZIRI ITZEL MORALES SANCHEZ",
+            "analyst_workday": "100951823",
+            "analyst_corp": "x743603",
+            "analyst_mail": "yatmorales@empresaexterna.com.mx",
+            "analyst_upn": "Z800358",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z917374",
+            "analyst_name": "JOSE DE JESUS ZAMORA NARANJO",
+            "analyst_workday": "100917374",
+            "analyst_corp": "x602469",
+            "analyst_mail": "jzamora@empresaexterna.com.mx",
+            "analyst_upn": "z917374@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z917375",
+            "analyst_name": "DAVID MARTINEZ RAMIREZ",
+            "analyst_workday": "100917375",
+            "analyst_corp": "x602468",
+            "analyst_mail": "davidmartinezr@empresaexterna.com.mx",
+            "analyst_upn": "z917375@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z917376",
+            "analyst_name": "RICARDO RODRIGUEZ GASPAR",
+            "analyst_workday": "100917376",
+            "analyst_corp": "x602485",
+            "analyst_mail": "ricarodriguez@empresaexterna.com.mx",
+            "analyst_upn": "z917376@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921054",
+            "analyst_name": "RIVERA GONZALEZ ARTURO",
+            "analyst_workday": "100921054",
+            "analyst_corp": "x608538",
+            "analyst_mail": "artrivera@empresaexterna.com.mx",
+            "analyst_upn": "Z921054@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921055",
+            "analyst_name": "CEJA DELGADILLO RAUL OSVALDO",
+            "analyst_workday": "100921055",
+            "analyst_corp": "x608502",
+            "analyst_mail": "rceja@empresaexterna.com.mx",
+            "analyst_upn": "Z921055@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921056",
+            "analyst_name": "GONZALEZ MARTINEZ CARLOS",
+            "analyst_workday": "100921056",
+            "analyst_corp": "x608598",
+            "analyst_mail": "carlosgonzalezm@empresaexterna.com.mx",
+            "analyst_upn": "Z921056@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921057",
+            "analyst_name": "DIAZ ARENAS HECTOR",
+            "analyst_workday": "100921057",
+            "analyst_corp": "x608588",
+            "analyst_mail": "hediaz@empresaexterna.com.mx",
+            "analyst_upn": "Z921057@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921058",
+            "analyst_name": "PEREZ RAMIREZ ARMANDO",
+            "analyst_workday": "100921058",
+            "analyst_corp": "x608473",
+            "analyst_mail": "armandperez@empresaexterna.com.mx",
+            "analyst_upn": "Z921058@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921059",
+            "analyst_name": "ROMERO GOMEZ ANTONIO",
+            "analyst_workday": "100921059",
+            "analyst_corp": "x608519",
+            "analyst_mail": "anromero@empresaexterna.com.mx",
+            "analyst_upn": "Z921059@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921060",
+            "analyst_name": "GARCIA VITAL EDUARDO",
+            "analyst_workday": "100921060",
+            "analyst_corp": "x608607",
+            "analyst_mail": "eduardogarciav@empresaexterna.com.mx",
+            "analyst_upn": "Z921060@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921061",
+            "analyst_name": "CAMACHO FLORES CESAR OMAR",
+            "analyst_workday": "100921061",
+            "analyst_corp": "x608587",
+            "analyst_mail": "cescamacho@empresaexterna.com.mx",
+            "analyst_upn": "Z921061@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921062",
+            "analyst_name": "UCAN SUASTE WILBERT VICTORIANO",
+            "analyst_workday": "100921062",
+            "analyst_corp": "x608543",
+            "analyst_mail": "wiucan@empresaexterna.com.mx",
+            "analyst_upn": "Z921062@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921063",
+            "analyst_name": "ROSADO HERNANDEZ JUAN MANUEL",
+            "analyst_workday": "100921063",
+            "analyst_corp": "x608622",
+            "analyst_mail": "jrosado@empresaexterna.com.mx",
+            "analyst_upn": "z921063@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921064",
+            "analyst_name": "SANCHEZ GONZALEZ MARCOS ROSENDO",
+            "analyst_workday": "100921064",
+            "analyst_corp": "x608622",
+            "analyst_mail": "marcosrsanchez@empresaexterna.com.mx",
+            "analyst_upn": "Z921064@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z921065",
+            "analyst_name": "RAQUEL ACEVEDO SOLARES",
+            "analyst_workday": "100921065",
+            "analyst_corp": "x608600",
+            "analyst_mail": "racevedo@empresaexterna.com.mx",
+            "analyst_upn": "Z921065@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z923416",
+            "analyst_name": "ARGUELLO HERNANDEZ EDGAR ULISES",
+            "analyst_workday": "100923416",
+            "analyst_corp": "x612434",
+            "analyst_mail": "earguello@empresaexterna.com.mx",
+            "analyst_upn": "Z923416@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z923417",
+            "analyst_name": "GARCIA LAZO ROBERTO",
+            "analyst_workday": "100923417",
+            "analyst_corp": "x612383",
+            "analyst_mail": "robertgarcia@empresaexterna.com.mx",
+            "analyst_upn": "Z923417@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        },
+        {
+            "analyst_expediente": "Z923418",
+            "analyst_name": "GARCIA MALDONADO JOSE",
+            "analyst_workday": "100923418",
+            "analyst_corp": "x612352",
+            "analyst_mail": "josegarciama@empresaexterna.com.mx",
+            "analyst_upn": "Z923418@santander.com.mx",
+            "analyst_type": "SDK",
+            "analyst_status": 1
+        }
+    ];
+// estoy usando bootstrap y quiero crear una tabla con el contenido de data, maximo 5 usuarios por vista que este paginada, los botones de paginacion maximo que sean 5 contando los dos controles de salto y 3 botones de pagina que vayan actualiandose hasta llegar al limite usando JS vainilla y bootstrap como lo tenemos ahora 
+</script>
