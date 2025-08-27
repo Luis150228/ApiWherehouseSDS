@@ -1,76 +1,81 @@
-mainScore.js:54 Uncaught (in promise) ReferenceError: Cannot access 'toBarDataTable' before initialization
-    at drawChart (mainScore.js:54:18)
-drawChart	@	mainScore.js:54
-Promise.then		
-Cc	@	loader.js:143
-(anónimas)	@	mainScore.js:8
-
-
+// mainScore.js
 import { byId } from './js/utils/dom.js';
 import { fetchGet } from '../../../js/connect.js';
 import { divLoader } from '../../../js/elements.js';
 
-byId('reportWrap')?.setAttribute('data-set', true)
+byId('reportWrap')?.setAttribute('data-set', true);
 divLoader();
-google.charts.load('current', { packages: ['bar'] });
-google.charts.setOnLoadCallback(drawChart);
-// Se solicita la data
-const apiResponse = await fetchGet('genericos', { generics: true, score: true, xlsx: 'noGenerate' })
 
-// Normaliza nombre de analista
+// 1) Lanza el fetch SIN top-level await
+const apiResponsePromise = fetchGet('genericos', { generics: true, score: true, xlsx: 'noGenerate' });
+
+// 2) Helpers y transform (defínelos ANTES de registrar callbacks)
 const normalizeAnalyst = (v) => {
-    const s = (v ?? '').toString().trim();
-    return s.length ? s : 'Sin analista';
+  const s = (v ?? '').toString().trim();
+  return s.length ? s : 'Sin analista';
 };
 
-// --- Función independiente: JSON -> DataTable (agrupado por analyst_name)
-const toBarDataTable = (json) => {
-    const rows = Array.isArray(json?.data) ? json.data : [];
+// JSON -> google.visualization.DataTable agrupado por analyst_name
+function toBarDataTable(json) {
+  const rows = Array.isArray(json?.data) ? json.data : [];
+  const grouped = new Map();
 
-    // Agrupar por analyst_name
-    const grouped = new Map();
-    for (const r of rows) {
-        const key = normalizeAnalyst(r.analyst_name);
-        if (!grouped.has(key)) {
-            grouped.set(key, { total: 0, valid: 0, invalid: 0 });
-        }
-        const g = grouped.get(key);
-        g.total += Number(r.total_fields) || 0;
-        g.valid += Number(r.valid_count) || 0;
-        g.invalid += Number(r.invalid_count) || 0;
-    }
+  for (const r of rows) {
+    const key = normalizeAnalyst(r.analyst_name);
+    if (!grouped.has(key)) grouped.set(key, { total: 0, valid: 0, invalid: 0 });
+    const g = grouped.get(key);
+    g.total   += Number(r.total_fields)  || 0;
+    g.valid   += Number(r.valid_count)   || 0;
+    g.invalid += Number(r.invalid_count) || 0;
+  }
 
-    // Construir DataTable
-    const dt = new google.visualization.DataTable();
-    dt.addColumn('string', 'Analyst');  // categoría
-    dt.addColumn('number', 'Sales');    // total_fields
-    dt.addColumn('number', 'Expenses'); // valid_count
-    dt.addColumn('number', 'Profit');   // invalid_count
+  const dt = new google.visualization.DataTable();
+  dt.addColumn('string', 'Analyst');   // categoría
+  dt.addColumn('number', 'Sales');     // total_fields
+  dt.addColumn('number', 'Expenses');  // valid_count
+  dt.addColumn('number', 'Profit');    // invalid_count
 
-    // Pasar filas ordenadas por Sales (desc)
-    const dataRows = [...grouped.entries()]
-        .sort((a, b) => b[1].total - a[1].total)
-        .map(([name, v]) => [name, v.total, v.valid, v.invalid]);
+  const dataRows = [...grouped.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([name, v]) => [name, v.total, v.valid, v.invalid]);
 
-    dt.addRows(dataRows);
-    return dt;
-};
-
-function drawChart() {
-    // Si en prod lo traes por fetch:
-    // const json = await (await fetch('/tu/endpoint')).json();
-    // const data = toBarDataTable(json);
-    const data = toBarDataTable(apiResponse);
-
-    const options = {
-        chart: {
-            title: 'Calidad por analista',
-            subtitle: 'Sales=total_fields, Expenses=valid_count, Profit=invalid_count'
-        }
-    };
-
-    const chart = new google.charts.Bar(
-        document.getElementById('columnchart_material')
-    );
-    chart.draw(data, google.charts.Bar.convertOptions(options));
+  dt.addRows(dataRows);
+  return dt;
 }
+
+// 3) Dibujo (recibe el JSON para no depender de variables no listas)
+function drawChart(json) {
+  const data = toBarDataTable(json);
+  const options = {
+    chart: {
+      title: 'Calidad por analista',
+      subtitle: 'Sales=total_fields, Expenses=valid_count, Profit=invalid_count',
+    },
+  };
+
+  const el = document.getElementById('columnchart_material');
+  const chart = new google.charts.Bar(el);
+  chart.draw(data, google.charts.Bar.convertOptions(options));
+}
+
+// 4) Carga Google Charts y espera el fetch
+google.charts.load('current', { packages: ['bar'] });
+google.charts.setOnLoadCallback(async () => {
+  try {
+    const json = await apiResponsePromise;
+    drawChart(json);
+  } catch (e) {
+    console.error('Error cargando datos:', e);
+  }
+});
+
+// (Opcional) Redibujar al cambiar tamaño sin re-fetchear
+window.addEventListener('resize', async () => {
+  if (!google?.charts) return;
+  try {
+    const json = await apiResponsePromise; // ya resuelta, no re-llama a red
+    drawChart(json);
+  } catch (e) {
+    console.error(e);
+  }
+});
